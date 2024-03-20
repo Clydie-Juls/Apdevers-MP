@@ -68,7 +68,7 @@ const User = () => {
       method: "delete",
     });
 
-    location.replace("/");
+    console.log(123);
   }
 
   function handleDescriptionInput(newDescription) {

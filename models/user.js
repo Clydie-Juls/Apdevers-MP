@@ -23,6 +23,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'https://github.com/shadcn.png'
   },
+  deleted: {
+    type: Boolean,
+    default: false
+  }
 });
 
 export const User = mongoose.model("User", UserSchema);
