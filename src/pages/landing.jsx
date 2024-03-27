@@ -81,8 +81,15 @@ const Landing = () => {
           author: username 
         };
       }));
+
+      const postsWithRatio = formattedPopularPosts.map(post => ({
+        ...post,
+        likeDislikeRatio: post.likes / (post.likes + post.dislikes) || 0,
+      }));
+
+      const sortedPopularPosts = postsWithRatio.sort((a, b) => b.likeDislikeRatio - a.likeDislikeRatio);
       
-      setPopularPosts(formattedPopularPosts);
+      setPopularPosts(sortedPopularPosts);
       setLoadingPopular(false);
     } catch (error) {
       console.error('Error fetching popular posts:', error);
@@ -97,7 +104,6 @@ const Landing = () => {
   useEffect(() => {
     fetchRecentPosts();
     fetchPopularPosts();
-
     fetchLoginStatus();
   }, []);
 

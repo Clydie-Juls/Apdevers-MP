@@ -132,17 +132,25 @@ apiRouter.get("/comments/:id", isAuth, async (req, res) => {
 
 app.get("/api/posts/recent", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ uploadDate: -1 });
+    const recentPosts = await Post.aggregate([
+      {
+        $addFields: {
+          totalLikes: { $size: "$reactions.likerIds" },
+          totalDislikes: { $size: "$reactions.dislikerIds" },
+        },
+      },
+      { $sort: { uploadDate: -1 } } 
+    ]);
 
-    const formattedPosts = posts.map((post) => ({
-      ...post.toObject(),
+    const formattedRecentPosts = recentPosts.map((post) => ({
+      ...post,
       uploadDate: formatDate(post.uploadDate),
     }));
 
-    res.status(200).json(formattedPosts);
+    res.status(200).json(formattedRecentPosts);
   } catch (error) {
-    console.error("Error fetching posts:", error);
-    res.status(500).json({ error: "Failed to fetch posts" });
+    console.error("Error fetching recent posts:", error);
+    res.status(500).json({ error: "Failed to fetch recent posts" });
   }
 });
 
