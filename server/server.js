@@ -2,7 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
 import bcrypt from "bcrypt";
-import { check, validationResult } from 'express-validator';
+import { body, check, validationResult } from 'express-validator';
 
 import { User } from "../models/user.js";
 import { Post } from "../models/post.js";
@@ -433,6 +433,7 @@ apiRouter.post("/account/logout/:id", async (req, res) => {
 apiRouter.post(
   "/posts/write", 
   [
+    multer().array(),
     check('title')
       .notEmpty()
       .withMessage('Post title cannot be empty.'),
@@ -440,7 +441,6 @@ apiRouter.post(
       .notEmpty()
       .withMessage('Post body cannot be empty.'),
     isAuth, 
-    multer().array(),
   ], 
   async (req, res) => {
     const errors = validationResult(req);
@@ -473,6 +473,7 @@ apiRouter.post(
 apiRouter.put(
   "/posts/edit/:id", 
   [
+    multer().array(),
     check('title')
       .notEmpty()
       .withMessage('Post title cannot be empty.'),
@@ -480,7 +481,6 @@ apiRouter.put(
       .notEmpty()
       .withMessage('Post body cannot be empty.'),
     isAuth,
-    multer().array()
   ], 
   async (req, res) => {
     const errors = validationResult(req);
