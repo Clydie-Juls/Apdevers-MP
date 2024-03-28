@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 
 import "./App.css";
+import About from './pages/about';
 import Landing from "./pages/landing";
 import Login from "./pages/login";
 import SignUp from "./pages/signUp";
@@ -16,6 +17,7 @@ function App() {
     <div className="">
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/editlogininfo/:id" element={<EditLoginInfo />} />
