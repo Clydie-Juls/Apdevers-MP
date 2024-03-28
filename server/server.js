@@ -2,6 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
 import bcrypt from "bcrypt";
+import { check, validationResult } from 'express-validator';
+
 import { User } from "../models/user.js";
 import { Post } from "../models/post.js";
 import { Comment } from "../models/comment.js";
@@ -265,26 +267,48 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 });
 
 // POST and PUT HTTP requests
-apiRouter.put("/users/edit/:id", isAuth, async (req, res) => {
-  try {
-    const { username, password, description } = req.body;
+apiRouter.put(
+  "/users/edit/:id", 
+  [
+    check('username')
+      .notEmpty()
+      .withMessage('Username should not be empty.')
+      .isLength({ min: 3 })
+      .withMessage('Username should be at least 3 characters.'),
+    check('password')
+      .notEmpty()
+      .withMessage('Password should not be empty.')
+      .isLength({ min: 7 })
+      .withMessage('Password should be at least 7 characters.'),
+    isAuth,
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
 
-    const { nModified } = await User.updateOne(
-      {
-        _id: req.params.id,
-      },
-      {
-        ...(username && { username }),
-        ...(password && { password }),
-        ...(description && { description }),
-      }
-    );
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+    
+    try {
+      const { username, password, description } = req.body;
 
-    res.status(nModified === 0 ? 204 : 200).send();
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+      const { nModified } = await User.updateOne(
+        {
+          _id: req.params.id,
+        },
+        {
+          ...(username && { username }),
+          ...(password && { password }),
+          ...(description && { description }),
+        }
+      );
+
+      res.status(nModified === 0 ? 204 : 200).send();
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
 
 apiRouter.get("/account/logincheck", async (req, res, next) => {
   try {
@@ -307,53 +331,95 @@ apiRouter.get("/account/logincheck", async (req, res, next) => {
   }
 });
 
-apiRouter.post("/account/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+apiRouter.post(
+  "/account/login", 
+  [
+    check('username')
+      .notEmpty()
+      .withMessage('Username should not be empty.')
+      .isLength({ min: 3 })
+      .withMessage('Username should be at least 3 characters.'),
+    check('password')
+      .notEmpty()
+      .withMessage('Password should not be empty.')
+      .isLength({ min: 7 })
+      .withMessage('Password should be at least 7 characters.'),
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
 
-    const user = await User.findOne({ username });
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+    
+    try {
+      const { username, password } = req.body;
 
-    if (!user) {
-      return res
-        .status(401)
-        .send("Login not successful. Invalid username or password.");
+      const user = await User.findOne({ username });
+
+      if (!user) {
+        return res
+          .status(401)
+          .send("Login not successful. Invalid username or password.");
+      }
+
+      const hashedPassword = user.password;
+
+      const passwordMatch = await passwordMatches(password, hashedPassword);
+
+      if (!passwordMatch) {
+        console.log("Password does not match");
+        return res
+          .status(401)
+          .send("Login not successful. Invalid username or password.");
+      }
+
+      setLoggedInUser(username);
+      return res.status(200).send("Login successful");
+    } catch (e) {
+      console.error("Error logging in:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+);
+
+apiRouter.post(
+  "/account/signup", 
+  [
+    check('username')
+      .notEmpty()
+      .withMessage('Username should not be empty.')
+      .isLength({ min: 3 })
+      .withMessage('Username should be at least 3 characters.'),
+    check('password')
+      .notEmpty()
+      .withMessage('Password should not be empty.')
+      .isLength({ min: 7 })
+      .withMessage('Password should be at least 7 characters.'),
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
     }
 
-    const hashedPassword = user.password;
+    try {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    const passwordMatch = await passwordMatches(password, hashedPassword);
+      const user = await User.create({
+        username: req.body.username,
+        password: hashedPassword,
+      });
 
-    if (!passwordMatch) {
-      console.log("Password does not match");
-      return res
-        .status(401)
-        .send("Login not successful. Invalid username or password.");
+      user.save();
+      setLoggedInUser(req.body.username);
+      res.status(201).redirect("/");
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-
-    setLoggedInUser(username);
-    return res.status(200).send("Login successful");
-  } catch (e) {
-    console.error("Error logging in:", e);
-    return res.status(500).json({ error: e.message });
   }
-});
-
-apiRouter.post("/account/signup", async (req, res) => {
-  try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-    const user = await User.create({
-      username: req.body.username,
-      password: hashedPassword,
-    });
-
-    user.save();
-    setLoggedInUser(req.body.username);
-    res.status(201).redirect("/");
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+);
 
 apiRouter.post("/account/logout/:id", async (req, res) => {
   try {
@@ -364,52 +430,90 @@ apiRouter.post("/account/logout/:id", async (req, res) => {
   }
 });
 
-apiRouter.post("/posts/write", [isAuth, multer().array()], async (req, res) => {
-  try {
-    const poster = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+apiRouter.post(
+  "/posts/write", 
+  [
+    check('title')
+      .notEmpty()
+      .withMessage('Post title cannot be empty.'),
+    check('body')
+      .notEmpty()
+      .withMessage('Post body cannot be empty.'),
+    isAuth, 
+    multer().array(),
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
 
-    const newPost = await Post.create({
-      title: req.body.title,
-      posterId: poster._id,
-      body: req.body.body,
-      reactions: {
-        likerIds: [],
-        dislikerIds: [],
-      },
-      tags: req.body.tags,
-    });
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+    
+    try {
+      const poster = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
 
-    res.status(201).send(`/post/${newPost._id}`);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+      const newPost = await Post.create({
+        title: req.body.title,
+        posterId: poster._id,
+        body: req.body.body,
+        reactions: {
+          likerIds: [],
+          dislikerIds: [],
+        },
+        tags: req.body.tags,
+      });
+
+      res.status(201).send(`/post/${newPost._id}`);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
 
-apiRouter.put("/posts/edit/:id", [isAuth, multer().array()], async (req, res) => {
-  try {
-    const { id } = req.params;
+apiRouter.put(
+  "/posts/edit/:id", 
+  [
+    check('title')
+      .notEmpty()
+      .withMessage('Post title cannot be empty.'),
+    check('body')
+      .notEmpty()
+      .withMessage('Post body cannot be empty.'),
+    isAuth,
+    multer().array()
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The post does not exist." });
-      return;
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
     }
 
-    await Post.updateOne(
-      {
-        _id: id,
-      },
-      {
-        title: req.body.title,
-        body: req.body.body,
-        tags: req.body.tags,
-      }
-    );
+    try {
+      const { id } = req.params;
 
-    res.status(200).send(`/post/${id}`);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        res.status(404).json({ error: "The post does not exist." });
+        return;
+      }
+
+      await Post.updateOne(
+        {
+          _id: id,
+        },
+        {
+          title: req.body.title,
+          body: req.body.body,
+          tags: req.body.tags,
+        }
+      );
+
+      res.status(200).send(`/post/${id}`);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
 
 apiRouter.post("/posts/like/:id", isAuth, async (req, res) => {
   try {
@@ -538,50 +642,83 @@ apiRouter.post("/posts/unreact/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/comments/write", isAuth, async (req, res) => {
-  try {
-    const commenter = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+apiRouter.post(
+  "/comments/write", 
+  [
+    check('postId')
+      .notEmpty()
+      .withMessage('Post ID cannot be empty.'),
+    check('body')
+      .notEmpty()
+      .withMessage('Comment body cannot be empty.'),
+    isAuth
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
 
-    const newComment = await Comment.create({
-      commenterId: commenter._id,
-      postId: req.body.postId,
-      commentRepliedToId: req.body.commentRepliedToId ?? null,
-      body: req.body.body,
-      reactions: {
-        likerIds: [],
-        dislikerIds: [],
-      },
-    });
-
-    res.status(201).json({ comment: newComment.toJSON() });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-apiRouter.put("/comments/edit/:id", isAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The comment does not exist." });
-      return;
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
     }
 
-    const editedComment = await Comment.updateOne(
-      {
-        _id: id,
-      },
-      {
-        body: req.body.body,
-      }
-    ).lean();
+    try {
+      const commenter = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
 
-    res.status(200).json({ comment: editedComment });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+      const newComment = await Comment.create({
+        commenterId: commenter._id,
+        postId: req.body.postId,
+        commentRepliedToId: req.body.commentRepliedToId ?? null,
+        body: req.body.body,
+        reactions: {
+          likerIds: [],
+          dislikerIds: [],
+        },
+      });
+
+      res.status(201).json({ comment: newComment.toJSON() });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
+
+apiRouter.put(
+  "/comments/edit/:id", 
+  [
+    check('body')
+      .notEmpty()
+      .withMessage('Comment body cannot be empty.'),
+    isAuth
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+
+    try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        res.status(404).json({ error: "The comment does not exist." });
+        return;
+      }
+
+      const editedComment = await Comment.updateOne(
+        {
+          _id: id,
+        },
+        {
+          body: req.body.body,
+        }
+      ).lean();
+
+      res.status(200).json({ comment: editedComment });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+);
 
 apiRouter.post("/comments/like/:id", isAuth, async (req, res) => {
   try {
