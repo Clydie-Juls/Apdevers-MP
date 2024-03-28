@@ -77,7 +77,8 @@ export function LoginForm() {
               <Label htmlFor="username">Username</Label>
               <Input 
                 id="username" 
-                name="username" 
+                name="username"
+                minlength="3"
                 placeholder="e.g. John Doe" 
                 required 
                 value={formData.username} 
@@ -90,6 +91,7 @@ export function LoginForm() {
                 type="password" 
                 id="password" 
                 name="password" 
+                minlength="7"
                 placeholder="********" 
                 required 
                 value={formData.password} 
