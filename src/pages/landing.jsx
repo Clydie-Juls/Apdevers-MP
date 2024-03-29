@@ -33,15 +33,16 @@ const Landing = () => {
 
       const formattedRecentPosts = await Promise.all(
         data.map(async (post) => {
-          const { userResponse, userData } = await fetchWithTokenRefresh(() =>
-            fetch(`/api/users/${post.posterId}`, {
-              headers: {
-                Authorization: `Bearer ${sessionStorage.getItem(
-                  "accessToken"
-                )}`,
-              },
-            })
-          );
+          const { response: userResponse, data: userData } =
+            await fetchWithTokenRefresh(() =>
+              fetch(`/api/users/${post.posterId}`, {
+                headers: {
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "accessToken"
+                  )}`,
+                },
+              })
+            );
 
           console.log("user:", userResponse);
 
@@ -93,15 +94,16 @@ const Landing = () => {
 
       const formattedPopularPosts = await Promise.all(
         data.map(async (post) => {
-          const { userResponse, userData } = await fetchWithTokenRefresh(() =>
-            fetch(`/api/users/${post.posterId}`, {
-              headers: {
-                Authorization: `Bearer ${sessionStorage.getItem(
-                  "accessToken"
-                )}`,
-              },
-            })
-          );
+          const { response: userResponse, data: userData } =
+            await fetchWithTokenRefresh(() =>
+              fetch(`/api/users/${post.posterId}`, {
+                headers: {
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "accessToken"
+                  )}`,
+                },
+              })
+            );
           if (!userResponse.ok) {
             throw new Error("Failed to fetch user information");
           }

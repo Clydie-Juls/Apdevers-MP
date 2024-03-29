@@ -15,13 +15,13 @@ import { Label } from "@/components/ui/label";
 const SignupForm = () => {
   function handleConfirmPasswordChange(e) {
     // TODO: Lol
-    const passwordInput = document.querySelector('#password');
+    const passwordInput = document.querySelector("#password");
     const confirmInput = e.target;
 
     if (passwordInput.value === confirmInput.value) {
-      confirmInput.setCustomValidity('');
+      confirmInput.setCustomValidity("");
     } else {
-      confirmInput.setCustomValidity('Passwords do not match');
+      confirmInput.setCustomValidity("Passwords do not match");
     }
   }
 
@@ -34,15 +34,27 @@ const SignupForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* since its a form method, di ko directly ma seset yung access token sa sotarage pero i think mag wowork parin */}
         <form id="signupForm" method="post" action="/api/account/signup">
           <div className="grid w-full items-center gap-4 mb-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="username">Username</Label>
-              <Input id="username" name="username" placeholder="e.g. John Doe" required />
+              <Input
+                id="username"
+                name="username"
+                placeholder="e.g. John Doe"
+                required
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="password">Password</Label>
-              <Input type="password" id="password" name="password" placeholder="********" required />
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="********"
+                required
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="conf-password">Confirm Password</Label>
@@ -59,8 +71,9 @@ const SignupForm = () => {
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-6">
-        <Button className=" w-full" form="signupForm">Sign Up</Button>
-
+        <Button className=" w-full" form="signupForm">
+          Sign Up
+        </Button>
 
         <p className=" text-muted-foreground mt-6 text-sm">
           Already have an account?{" "}

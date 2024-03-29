@@ -34,6 +34,7 @@ export async function fetchWithTokenRefresh(fetchCallback) {
       return response;
     } else {
       // If no errors, return the original data
+      console.log({ response, data });
       return { response: response, data: data };
     }
   } catch (error) {

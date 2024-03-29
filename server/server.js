@@ -6,9 +6,6 @@ import { User } from "../models/user.js";
 import { Post } from "../models/post.js";
 import { Comment } from "../models/comment.js";
 import {
-  isAuth,
-  setLoggedInUser,
-  loggedInUsername,
   jwtAuth,
   createJwtAccessToken,
   createJwtRefreshToken,
@@ -349,7 +346,6 @@ apiRouter.post("/account/login", async (req, res) => {
         .send("Login not successful. Invalid username or password.");
     }
 
-    setLoggedInUser(username);
     const accessToken = createJwtAccessToken({ username: username });
     const refreshToken = createJwtRefreshToken({ username: username });
     sendRefreshToken(res, refreshToken);
@@ -377,7 +373,6 @@ apiRouter.post("/account/signup", async (req, res) => {
     });
 
     user.save();
-    setLoggedInUser(req.body.username);
     const accessToken = createJwtAccessToken({ username: req.body.username });
 
     sendRefreshToken(res, refreshToken);
@@ -389,7 +384,12 @@ apiRouter.post("/account/signup", async (req, res) => {
 
 apiRouter.post("/account/logout/:id", async (req, res) => {
   try {
-    setLoggedInUser(null);
+    res.clearCookie("refreshToken", { path: "/" });
+    await User.updateOne(
+      { refreshToken: req.cookies.refreshToken },
+      { $set: { refreshToken: "" } }
+    );
+
     res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send();
   } catch (e) {
@@ -403,7 +403,7 @@ apiRouter.post(
   async (req, res) => {
     try {
       const poster = await User.findOne({
-        username: { $regex: new RegExp(loggedInUsername, "i") },
+        username: { $regex: new RegExp(req.user, "i") },
       });
 
       const newPost = await Post.create({
@@ -463,7 +463,7 @@ apiRouter.post("/posts/like/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    const liker = await User.findOne({ username: loggedInUsername });
+    const liker = await User.findOne({ username: req.user });
     const isIncluded = await Post.findOne({
       _id: id,
       "reactions.likerIds": liker._id,
@@ -510,7 +510,7 @@ apiRouter.post("/posts/dislike/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    const disliker = await User.findOne({ username: loggedInUsername });
+    const disliker = await User.findOne({ username: req.user });
     const isIncluded = await Post.findOne({
       _id: id,
       "reactions.dislikerIds": disliker._id,
@@ -557,7 +557,7 @@ apiRouter.post("/posts/unreact/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    const unreacter = await User.findOne({ username: loggedInUsername });
+    const unreacter = await User.findOne({ username: req.user });
 
     const { nModified } = await Post.updateOne(
       {
@@ -584,7 +584,7 @@ apiRouter.post("/posts/unreact/:id", jwtAuth, async (req, res) => {
 apiRouter.post("/comments/write", jwtAuth, async (req, res) => {
   try {
     const commenter = await User.findOne({
-      username: { $regex: new RegExp(loggedInUsername, "i") },
+      username: { $regex: new RegExp(req.user, "i") },
     });
 
     const newComment = await Comment.create({
@@ -637,7 +637,7 @@ apiRouter.post("/comments/like/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    const liker = await User.findOne({ username: loggedInUsername });
+    const liker = await User.findOne({ username: req.user });
     const isIncluded = await Comment.findOne({
       _id: id,
       "reactions.likerIds": liker._id,
@@ -684,7 +684,7 @@ apiRouter.post("/comments/dislike/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    const disliker = await User.findOne({ username: loggedInUsername });
+    const disliker = await User.findOne({ username: req.user });
     console.log("Dislike", disliker);
     const isIncluded = await Comment.findOne({
       _id: id,
@@ -734,9 +734,7 @@ apiRouter.delete("/users/:id", jwtAuth, async (req, res) => {
     await Post.deleteMany({ posterId: currUser._id });
     await Comment.deleteMany({ commenterId: currUser._id });
 
-    // TODO: Sign user out properly.
-    setLoggedInUser("");
-
+    res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send(`User ${req.params.id} deleted successfully`);
   } catch (e) {
     res.status(500).json({ error: e.message });

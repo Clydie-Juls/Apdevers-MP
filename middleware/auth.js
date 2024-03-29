@@ -55,14 +55,20 @@ export function createJwtAccessToken(payload) {
   });
 }
 
-export function createJwtRefreshToken(payload) {
+export function createJwtRefreshToken(payload, expiresIn = "14d") {
   return jwt.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET, {
-    expiresIn: "14d",
+    expiresIn: expiresIn,
   });
 }
 
-export function generateNewAccessToken(req, res) {
+export async function generateNewAccessToken(req, res) {
   const refreshToken = req.cookies.refreshToken;
+  const user = await User.findOne({ refreshToken: refreshToken }).lean();
+  if (!user) {
+    console.log("Refresh Token not recognized");
+    return res.status(401).redirect("/login");
+  }
+
   jwt.verify(
     refreshToken,
     process.env.JWT_REFRESH_TOKEN_SECRET,

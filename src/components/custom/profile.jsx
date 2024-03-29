@@ -35,7 +35,7 @@ const Profile = () => {
     <div className="flex gap-4 items-center">
       {account ? (
         <>
-          <a href={`/user/${id}`} className="flex items-center gap-4">
+          <a href={`/user/${account?._id}`} className="flex items-center gap-4">
             <Avatar>
               <AvatarImage src={account?.picture} />
               <AvatarFallback className="text-xl">

@@ -4,7 +4,6 @@ import { useParams } from "react-router";
 export const Account = {
   async isLoggedIn() {
     const details = await this.getDetails();
-    console.log("Sepkasepak", details);
     return details;
   },
 
@@ -18,9 +17,8 @@ export const Account = {
         })
       );
 
-      console.log("Data:", data);
       if (response.ok) {
-        return data.user;
+        return data;
       } else {
         console.log("Response not OK");
         return null;
@@ -34,7 +32,7 @@ export const Account = {
   async logout() {
     const details = await this.getDetails();
     const id = details.id;
-
+    sessionStorage.removeItem("accessToken");
     await fetch(`/api/account/logout/${id}`, {
       method: "post",
     });

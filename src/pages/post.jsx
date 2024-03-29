@@ -26,7 +26,7 @@ const Post = () => {
   const [comments, setComments] = useState([]);
   const [poster, setPoster] = useState(null);
   const { id } = useParams();
-  const [idOfCommentToDelete, setIdOfCommentToDelete] = useState(null)
+  const [idOfCommentToDelete, setIdOfCommentToDelete] = useState(null);
   const [rateButtonTrigger, setRateButtonTrigger] = useState(false);
 
   const [page, setPage] = useState(0);
@@ -38,11 +38,17 @@ const Post = () => {
   useEffect(() => {
     const fetchPostData = async () => {
       try {
-        const response = await fetch(`/api/posts/${id}`);
+        const { response, data } = await fetchWithTokenRefresh(() =>
+          fetch(`/api/users//${id}`, {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+          })
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch post");
         }
-        const postData = await response.json();
+        const postData = data;
         setPost(postData);
 
         const posterInfo = await fetchUserById(postData.post.posterId);
@@ -54,11 +60,18 @@ const Post = () => {
 
     const fetchCommentsData = async () => {
       try {
-        const response = await fetch(`/api/posts/${id}/comments`);
+        const { response, data } = await fetchWithTokenRefresh(() =>
+          fetch(`/api/posts/${id}/comments`, {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+          })
+        );
+
         if (!response.ok) {
           throw new Error("Failed to fetch post");
         }
-        const commentsData = await response.json();
+        const commentsData = data;
         setComments(commentsData);
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -84,11 +97,17 @@ const Post = () => {
   const fetchUserById = async (userId) => {
     try {
       console.log("Fetching user with ID:", userId);
-      const response = await fetch(`/api/users/${userId}`);
+      const { response, data } = await fetchWithTokenRefresh(() =>
+        fetch(`/api/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          },
+        })
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch user");
       }
-      const userData = await response.json();
+      const userData = data;
       console.log("User fetched successfully:", userData);
       return userData;
     } catch (error) {
@@ -98,7 +117,7 @@ const Post = () => {
   };
 
   const handleDelete = async () => {
-    if (whatToDelete === 'post') {
+    if (whatToDelete === "post") {
       await fetch(`/api/posts/${id}`, {
         method: "delete",
       });
@@ -129,14 +148,18 @@ const Post = () => {
   }
 
   const onPostLikeClick = async () => {
-    const response = await fetch(`/api/posts/like/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const { response, data } = await fetchWithTokenRefresh(() =>
+      fetch(`/api/posts/like/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+      })
+    );
+
     if (!response.ok) {
-      const errorMessage = await response.text();
+      const errorMessage = data;
       throw new Error(errorMessage || "Like failed");
     }
     console.log("Liked");
@@ -144,29 +167,36 @@ const Post = () => {
   };
 
   const onPostDislikeClick = async () => {
-    const response = await fetch(`/api/posts/dislike/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const { response, data } = await fetchWithTokenRefresh(() =>
+      fetch(`/api/posts/dislike/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+      })
+    );
+
     if (!response.ok) {
-      const errorMessage = await response.text();
+      const errorMessage = data;
       throw new Error(errorMessage || "Like failed");
     }
-    console.log("Liked");
+    console.log("disLiked");
     setRateButtonTrigger(!rateButtonTrigger);
   };
 
   const onCommentLikeClick = async (id) => {
-    const response = await fetch(`/api/comments/like/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const { response, data } = await fetchWithTokenRefresh(() =>
+      fetch(`/api/comments/like/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+      })
+    );
     if (!response.ok) {
-      const errorMessage = await response.text();
+      const errorMessage = data;
       throw new Error(errorMessage || "Like failed");
     }
     console.log("Liked");
@@ -174,14 +204,18 @@ const Post = () => {
   };
 
   const onCommentDislikeClick = async (id) => {
-    const response = await fetch(`/api/comments/dislike/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const { response, data } = await fetchWithTokenRefresh(() =>
+      fetch(`/api/comments/dislike/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+      })
+    );
+
     if (!response.ok) {
-      const errorMessage = await response.text();
+      const errorMessage = data;
       throw new Error(errorMessage || "Dislike failed");
     }
     console.log("Disliked");
@@ -201,11 +235,11 @@ const Post = () => {
               profile={poster.user.picture}
               userName={poster.user.username}
             />
-            <PostBody 
-              id={post.post._id} 
+            <PostBody
+              id={post.post._id}
               accountId={account?._id}
-              tags={post.post.tags} 
-              paragraph={post.post.body} 
+              tags={post.post.tags}
+              paragraph={post.post.body}
               numComments={comments.length}
               likerIds={post.post.reactions.likerIds}
               dislikerIds={post.post.reactions.dislikerIds}
