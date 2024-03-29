@@ -3,6 +3,7 @@ export async function fetchWithTokenRefresh(
   willRedirect = true
 ) {
   try {
+    console.log("FFFFFFF", fetchCallback);
     // Attempt the initial fetch call
     const response = await fetchCallback();
 

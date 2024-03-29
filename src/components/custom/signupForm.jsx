@@ -36,12 +36,19 @@ const SignupForm = () => {
       return;
     }
 
+    const formData = new FormData(formElem);
     try {
+      const username = formData.get("username");
+      const password = formData.get("password");
+      console.log(JSON.stringify({ username: username, password: password }));
       const response = await fetch("/api/account/signup", {
-        method: 'post',
-        body: new FormData(formElem)
+        method: "post",
+        body: JSON.stringify({ username: username, password: password }),
+        headers: {
+          "Content-type": "application/json",
+        },
       });
-  
+
       const { accessToken } = await response.json();
       sessionStorage.setItem("accessToken", accessToken);
 
@@ -61,7 +68,6 @@ const SignupForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* since its a form method, di ko directly ma seset yung access token sa sotarage pero i think mag wowork parin */}
         <form id="signupForm" method="post" onSubmit={handleSubmit}>
           <div className="grid w-full items-center gap-4 mb-4">
             <div className="flex flex-col gap-3">

@@ -288,18 +288,17 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 // POST and PUT HTTP requests
 apiRouter.put("/users/edit/:id", jwtAuth, async (req, res) => {
   try {
-    const { username, password, description } = req.body;
-
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    let info = req.body;
+    if (info.password) {
+      info.password = await bcrypt.hash(req.body.password, 10);
+    }
 
     const { nModified } = await User.updateOne(
       {
-        _id: req.params.id,
+        username: req.user.user,
       },
       {
-        ...(username && { username }),
-        ...(password && { password: hashedPassword }),
-        ...(description && { description }),
+        $set: req.body,
       }
     );
 
@@ -318,7 +317,7 @@ apiRouter.get("/account/logincheck", jwtAuth, async (req, res, next) => {
     }
 
     const userInfo = await User.findOne({
-      username: { $regex: new RegExp(req.user, "i") },
+      username: { $regex: new RegExp(req.user.user, "i") },
     });
 
     res.status(200).json({
@@ -373,8 +372,8 @@ apiRouter.post("/account/login", async (req, res) => {
 
 apiRouter.post("/account/signup", async (req, res) => {
   try {
+    console.log(req.body);
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
     const refreshToken = createJwtRefreshToken({ username: req.body.username });
     const user = await User.create({
       username: req.body.username,
@@ -385,6 +384,7 @@ apiRouter.post("/account/signup", async (req, res) => {
     user.save();
     const accessToken = createJwtAccessToken({ username: req.body.username });
 
+    console.log("5");
     sendRefreshToken(res, refreshToken);
     res.status(201).json({ accessToken: accessToken });
   } catch (e) {
@@ -428,7 +428,7 @@ apiRouter.post(
         tags: req.body.tags,
       });
 
-      res.status(201).send(`/post/${newPost._id}`);
+      res.status(201).json({ url: `/post/${newPost._id}` });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -458,7 +458,7 @@ apiRouter.put(
         }
       );
 
-      res.status(200).send(`/post/${id}`);
+      res.status(200).json({ url: `/post/${id}` });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }

@@ -28,7 +28,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
   };
 
   console.log(id);
-  useEffect(async () => {
+  useEffect(() => {
     const fetchCommentData = async () => {
       try {
         const { response, data } = await fetchWithTokenRefresh(() =>
@@ -57,12 +57,12 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
       if (!isloggedIn) {
         window.location.replace("/login");
       }
+      if (!isWriteComment) {
+        fetchCommentData();
+      }
     };
 
-    await checkedIfLoggedIn();
-    if (!isWriteComment) {
-      fetchCommentData();
-    }
+    checkedIfLoggedIn();
   }, []);
 
   const handleSubmit = async (e) => {

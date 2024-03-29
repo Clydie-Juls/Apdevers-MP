@@ -7,6 +7,7 @@ import TagInput from "@/components/custom/tagInput";
 import { useParams } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTokenRefresh } from "@/lib/authFetch";
+import { Account } from "@/lib/Account";
 
 const PostEditor = ({ isWritePost }) => {
   const { id } = useParams();
@@ -46,9 +47,18 @@ const PostEditor = ({ isWritePost }) => {
       });
     };
 
-    if (!isWritePost) {
-      fetchData();
-    }
+    const checkedIfLoggedIn = async () => {
+      const isloggedIn = await Account.isLoggedIn();
+      if (!isloggedIn) {
+        window.location.replace("/login");
+      }
+
+      if (!isWritePost) {
+        fetchData();
+      }
+    };
+
+    checkedIfLoggedIn();
   }, [id, isWritePost]);
 
   function handleTagsChange(newTags) {
@@ -63,31 +73,33 @@ const PostEditor = ({ isWritePost }) => {
     const formElem = formRef.current;
 
     const formBody = new FormData(formElem);
-    postInfo.tags.forEach((t) => formBody.append("tags[]", t));
+    let formDataObj = Object.fromEntries(formBody.entries());
+    formDataObj.tags = [];
+    postInfo.tags.forEach((t) => formDataObj.tags.push(t));
 
     const { response, data } = !id
       ? await fetchWithTokenRefresh(() =>
           fetch(`/api/posts/write`, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-type": "application/json",
               Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
             },
-            body: formBody,
+            body: JSON.stringify(formDataObj),
           })
         )
       : await fetchWithTokenRefresh(() =>
           fetch(`/api/posts/edit/${id}`, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/json",
+              "Content-type": "application/json",
               Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
             },
-            body: formBody,
+            body: JSON.stringify(formDataObj),
           })
         );
 
-    location.replace(data);
+    location.replace(data.url);
   }
 
   return (

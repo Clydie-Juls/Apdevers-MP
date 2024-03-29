@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fetchWithTokenRefresh } from "@/lib/authFetch";
+import { Account } from "@/lib/Account";
 
 const EditLoginInfo = () => {
   const { id } = useParams();
@@ -39,6 +39,7 @@ const EditLoginInfo = () => {
         })
       );
 
+      console.log("EFFEFEFE", data);
       if (response.status === 404) {
         setNewUserInfo(null);
         return;
@@ -48,12 +49,20 @@ const EditLoginInfo = () => {
       setNewUserInfo((ui) => ({ ...ui, username: userInfo.user.username }));
     };
 
-    fetchData();
+    const checkedIfLoggedIn = async () => {
+      const isloggedIn = await Account.isLoggedIn();
+      if (!isloggedIn) {
+        window.location.replace("/login");
+      }
+      fetchData();
+    };
+
+    checkedIfLoggedIn();
   }, [id]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    
+
     await fetchWithTokenRefresh(() =>
       fetch(`/api/users/edit/${id}`, {
         method: "PUT",

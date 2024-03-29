@@ -105,6 +105,8 @@ const User = () => {
         }),
       })
     );
+
+    console.log("EeFEFEFFEFE", "TOTOTOTOTTOTOTOT");
   }
 
   function handleInfoEditButtonClick() {
