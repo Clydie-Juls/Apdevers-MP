@@ -93,15 +93,18 @@ const User = () => {
   }
 
   async function handleDescriptionSet(newDescription) {
-    await fetch(`/api/users/edit/${id}`, {
-      method: "put",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        description: newDescription,
-      }),
-    });
+    await fetchWithTokenRefresh(() =>
+      fetch(`/api/users/edit/${id}`, {
+        method: "put",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({
+          description: newDescription,
+        }),
+      })
+    );
   }
 
   function handleInfoEditButtonClick() {

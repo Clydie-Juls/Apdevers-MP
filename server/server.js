@@ -288,19 +288,22 @@ apiRouter.put("/users/edit/:id", jwtAuth, async (req, res) => {
   try {
     const { username, password, description } = req.body;
 
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
     const { nModified } = await User.updateOne(
       {
         _id: req.params.id,
       },
       {
         ...(username && { username }),
-        ...(password && { password }),
+        ...(password && { password: hashedPassword }),
         ...(description && { description }),
       }
     );
 
     res.status(nModified === 0 ? 204 : 200).send();
   } catch (e) {
+    console.log(e.message);
     res.status(500).json({ error: e.message });
   }
 });
