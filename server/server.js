@@ -370,7 +370,7 @@ apiRouter.post("/account/signup", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    const refreshToken = createJwtRefreshToken({ username: username });
+    const refreshToken = createJwtRefreshToken({ username: req.body.username });
     const user = await User.create({
       username: req.body.username,
       password: hashedPassword,
@@ -383,6 +383,7 @@ apiRouter.post("/account/signup", async (req, res) => {
     sendRefreshToken(res, refreshToken);
     res.status(201).json({ accessToken: accessToken });
   } catch (e) {
+    console.log(e.message);
     res.status(500).json({ error: e.message });
   }
 });
