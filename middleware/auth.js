@@ -30,7 +30,7 @@ passport.use(
 export const jwtAuth = (req, res, next) =>
   passport.authenticate(
     "jwt",
-    { session: false },
+    { session: false, failureRedirect: "/login" },
     (err, user, info, status) => {
       if (info && info.name && info.name === "TokenExpiredError") {
         res.status(401).json({ message: info.name });

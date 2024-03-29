@@ -1,4 +1,7 @@
-export async function fetchWithTokenRefresh(fetchCallback) {
+export async function fetchWithTokenRefresh(
+  fetchCallback,
+  willRedirect = true
+) {
   try {
     // Attempt the initial fetch call
     const response = await fetchCallback();
@@ -26,12 +29,13 @@ export async function fetchWithTokenRefresh(fetchCallback) {
         return fetchWithTokenRefresh(fetchCallback);
       } else {
         // If unable to refresh token, redirect to login
-        return response;
-        // window.location.href = "/login";
+        window.location.href = "/login";
       }
     } else if (data.message === "Unauthorized") {
       // Redirect to login if unauthorized
-      return response;
+      if (willRedirect) {
+        window.location.href = "/login";
+      }
     } else {
       // If no errors, return the original data
       console.log({ response, data });

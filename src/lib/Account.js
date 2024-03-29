@@ -9,12 +9,14 @@ export const Account = {
 
   async getDetails() {
     try {
-      const { response, data } = await fetchWithTokenRefresh(() =>
-        fetch(`/api/account/logincheck`, {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
-          },
-        })
+      const { response, data } = await fetchWithTokenRefresh(
+        () =>
+          fetch(`/api/account/logincheck`, {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+          }),
+        false
       );
 
       if (response.ok) {

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
 
 const EditLoginInfo = () => {
   const { id } = useParams();

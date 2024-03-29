@@ -15,6 +15,7 @@ import CommentBody from "@/components/custom/commentBody";
 import PostHeader from "@/components/custom/postHeader";
 import { Account } from "@/lib/Account";
 import { useParams } from "react-router";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
 
 const DISPLAY_COUNT = 10;
 
@@ -39,7 +40,7 @@ const Post = () => {
     const fetchPostData = async () => {
       try {
         const { response, data } = await fetchWithTokenRefresh(() =>
-          fetch(`/api/users//${id}`, {
+          fetch(`/api/posts/${id}`, {
             headers: {
               Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
             },
@@ -49,6 +50,7 @@ const Post = () => {
           throw new Error("Failed to fetch post");
         }
         const postData = data;
+        console.log("post data:", postData);
         setPost(postData);
 
         const posterInfo = await fetchUserById(postData.post.posterId);
@@ -72,6 +74,7 @@ const Post = () => {
           throw new Error("Failed to fetch post");
         }
         const commentsData = data;
+        console.log("comment data:", commentsData);
         setComments(commentsData);
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -222,6 +225,7 @@ const Post = () => {
     setRateButtonTrigger(!rateButtonTrigger);
   };
 
+  console.log("fdfefffe", { post, poster, comments });
   return (
     <AnimBackground className="h-screen bg-background flex flex-col">
       <Header />
@@ -230,10 +234,10 @@ const Post = () => {
         {post && poster && (
           <>
             <PostHeader
-              title={post.post.title}
-              posterId={poster.user._id}
-              profile={poster.user.picture}
-              userName={poster.user.username}
+              title={post?.post.title}
+              posterId={poster?.user._id}
+              profile={poster?.user.picture}
+              userName={poster?.user.username}
             />
             <PostBody
               id={post.post._id}

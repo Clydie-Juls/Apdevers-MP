@@ -112,10 +112,11 @@ apiRouter.get("/users/:id", async (req, res) => {
   }
 });
 
-apiRouter.get("/posts/:id", jwtAuth, async (req, res) => {
+apiRouter.get("/posts/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log("id", id);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(404).json({ error: "The post does not exist." });
       return;
@@ -123,6 +124,7 @@ apiRouter.get("/posts/:id", jwtAuth, async (req, res) => {
 
     // post db fetch
     const post = await Post.findById(id).lean();
+    console.log("post");
 
     res.status(200).json({ post });
   } catch (e) {
@@ -130,7 +132,7 @@ apiRouter.get("/posts/:id", jwtAuth, async (req, res) => {
   }
 });
 
-apiRouter.get("/comments/:id", jwtAuth, async (req, res) => {
+apiRouter.get("/comments/:id", async (req, res) => {
   try {
     const { id } = req.params;
 

@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useEffect, useState } from "react";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
+import { Account } from "@/lib/Account";
 
 const CommentsPage = ({ isWriteComment, isReply }) => {
   const { id, commentRepliedToId } = useParams();
@@ -26,7 +28,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
   };
 
   console.log(id);
-  useEffect(() => {
+  useEffect(async () => {
     const fetchCommentData = async () => {
       try {
         const { response, data } = await fetchWithTokenRefresh(() =>
@@ -50,6 +52,14 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
       }
     };
 
+    const checkedIfLoggedIn = async () => {
+      const isloggedIn = await Account.isLoggedIn();
+      if (!isloggedIn) {
+        window.location.replace("/login");
+      }
+    };
+
+    await checkedIfLoggedIn();
     if (!isWriteComment) {
       fetchCommentData();
     }
