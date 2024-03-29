@@ -9,7 +9,15 @@ import {
   isAuth,
   setLoggedInUser,
   loggedInUsername,
+  jwtAuth,
+  createJwtAccessToken,
+  createJwtRefreshToken,
+  generateNewAccessToken,
 } from "../middleware/auth.js";
+import dotenv from "dotenv";
+import passport from "passport";
+import cookieParser from "cookie-parser";
+dotenv.config();
 
 const app = express();
 const port = 3000;
@@ -30,6 +38,16 @@ const passwordMatches = async (password, hash) => {
 // middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(passport.initialize());
+
+function sendRefreshToken(res, refreshToken) {
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    maxAge: 14 * 24 * 60 * 60 * 1000, // milliseconds to 14 days(2 weeks)
+    secure: true,
+  });
+}
 
 // Images
 
@@ -64,10 +82,9 @@ apiRouter.post(
 );
 
 // GET HTTP requests
-apiRouter.get("/users/:id", async (req, res) => {
+apiRouter.get("/users/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(404).json({ error: "The user does not exist." });
       return;
@@ -95,7 +112,7 @@ apiRouter.get("/users/:id", async (req, res) => {
   }
 });
 
-apiRouter.get("/posts/:id", isAuth, async (req, res) => {
+apiRouter.get("/posts/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -113,7 +130,7 @@ apiRouter.get("/posts/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.get("/comments/:id", isAuth, async (req, res) => {
+apiRouter.get("/comments/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -265,7 +282,7 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 });
 
 // POST and PUT HTTP requests
-apiRouter.put("/users/edit/:id", isAuth, async (req, res) => {
+apiRouter.put("/users/edit/:id", jwtAuth, async (req, res) => {
   try {
     const { username, password, description } = req.body;
 
@@ -286,15 +303,15 @@ apiRouter.put("/users/edit/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.get("/account/logincheck", async (req, res, next) => {
+apiRouter.get("/account/logincheck", jwtAuth, async (req, res, next) => {
   try {
-    if (!loggedInUsername) {
+    if (!req.user) {
       res.status(200).json({ isNull: true });
       return next();
     }
 
     const userInfo = await User.findOne({
-      username: { $regex: new RegExp(loggedInUsername, "i") },
+      username: { $regex: new RegExp(req.user, "i") },
     });
 
     res.status(200).json({
@@ -306,6 +323,8 @@ apiRouter.get("/account/logincheck", async (req, res, next) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+apiRouter.post("/account/token", generateNewAccessToken);
 
 apiRouter.post("/account/login", async (req, res) => {
   try {
@@ -331,7 +350,15 @@ apiRouter.post("/account/login", async (req, res) => {
     }
 
     setLoggedInUser(username);
-    return res.status(200).send("Login successful");
+    const accessToken = createJwtAccessToken({ username: username });
+    const refreshToken = createJwtRefreshToken({ username: username });
+    sendRefreshToken(res, refreshToken);
+    await User.updateOne(
+      { username: username },
+      { $set: { refreshToken: refreshToken } }
+    );
+
+    return res.status(200).json({ accessToken: accessToken });
   } catch (e) {
     console.error("Error logging in:", e);
     return res.status(500).json({ error: e.message });
@@ -342,14 +369,19 @@ apiRouter.post("/account/signup", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
+    const refreshToken = createJwtRefreshToken({ username: username });
     const user = await User.create({
       username: req.body.username,
       password: hashedPassword,
+      refreshToken: refreshToken,
     });
 
     user.save();
     setLoggedInUser(req.body.username);
-    res.status(201).redirect("/");
+    const accessToken = createJwtAccessToken({ username: req.body.username });
+
+    sendRefreshToken(res, refreshToken);
+    res.status(201).json({ accessToken: accessToken });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -358,60 +390,71 @@ apiRouter.post("/account/signup", async (req, res) => {
 apiRouter.post("/account/logout/:id", async (req, res) => {
   try {
     setLoggedInUser(null);
+    res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send();
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-apiRouter.post("/posts/write", [isAuth, multer().array()], async (req, res) => {
-  try {
-    const poster = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+apiRouter.post(
+  "/posts/write",
+  [jwtAuth, multer().array()],
+  async (req, res) => {
+    try {
+      const poster = await User.findOne({
+        username: { $regex: new RegExp(loggedInUsername, "i") },
+      });
 
-    const newPost = await Post.create({
-      title: req.body.title,
-      posterId: poster._id,
-      body: req.body.body,
-      reactions: {
-        likerIds: [],
-        dislikerIds: [],
-      },
-      tags: req.body.tags,
-    });
-
-    res.status(201).send(`/post/${newPost._id}`);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-apiRouter.put("/posts/edit/:id", [isAuth, multer().array()], async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The post does not exist." });
-      return;
-    }
-
-    await Post.updateOne(
-      {
-        _id: id,
-      },
-      {
+      const newPost = await Post.create({
         title: req.body.title,
+        posterId: poster._id,
         body: req.body.body,
+        reactions: {
+          likerIds: [],
+          dislikerIds: [],
+        },
         tags: req.body.tags,
-      }
-    );
+      });
 
-    res.status(200).send(`/post/${id}`);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+      res.status(201).send(`/post/${newPost._id}`);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
 
-apiRouter.post("/posts/like/:id", isAuth, async (req, res) => {
+apiRouter.put(
+  "/posts/edit/:id",
+  [jwtAuth, multer().array()],
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        res.status(404).json({ error: "The post does not exist." });
+        return;
+      }
+
+      await Post.updateOne(
+        {
+          _id: id,
+        },
+        {
+          title: req.body.title,
+          body: req.body.body,
+          tags: req.body.tags,
+        }
+      );
+
+      res.status(200).send(`/post/${id}`);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+);
+
+apiRouter.post("/posts/like/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -425,7 +468,7 @@ apiRouter.post("/posts/like/:id", isAuth, async (req, res) => {
       _id: id,
       "reactions.likerIds": liker._id,
     });
-    
+
     const { nModified } = !isIncluded
       ? await Post.updateOne(
           {
@@ -458,7 +501,7 @@ apiRouter.post("/posts/like/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/posts/dislike/:id", isAuth, async (req, res) => {
+apiRouter.post("/posts/dislike/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -505,7 +548,7 @@ apiRouter.post("/posts/dislike/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/posts/unreact/:id", isAuth, async (req, res) => {
+apiRouter.post("/posts/unreact/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -538,9 +581,11 @@ apiRouter.post("/posts/unreact/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/comments/write", isAuth, async (req, res) => {
+apiRouter.post("/comments/write", jwtAuth, async (req, res) => {
   try {
-    const commenter = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+    const commenter = await User.findOne({
+      username: { $regex: new RegExp(loggedInUsername, "i") },
+    });
 
     const newComment = await Comment.create({
       commenterId: commenter._id,
@@ -559,7 +604,7 @@ apiRouter.post("/comments/write", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.put("/comments/edit/:id", isAuth, async (req, res) => {
+apiRouter.put("/comments/edit/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -583,7 +628,7 @@ apiRouter.put("/comments/edit/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/comments/like/:id", isAuth, async (req, res) => {
+apiRouter.post("/comments/like/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -630,7 +675,7 @@ apiRouter.post("/comments/like/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.post("/comments/dislike/:id", isAuth, async (req, res) => {
+apiRouter.post("/comments/dislike/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -681,7 +726,7 @@ apiRouter.post("/comments/dislike/:id", isAuth, async (req, res) => {
 
 // DELETE HTTP Requests
 
-apiRouter.delete("/users/:id", isAuth, async (req, res) => {
+apiRouter.delete("/users/:id", jwtAuth, async (req, res) => {
   try {
     const currUser = await User.findOne({ _id: req.params.id });
 
@@ -698,7 +743,7 @@ apiRouter.delete("/users/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.delete("/posts/:id", isAuth, async (req, res) => {
+apiRouter.delete("/posts/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -716,7 +761,7 @@ apiRouter.delete("/posts/:id", isAuth, async (req, res) => {
   }
 });
 
-apiRouter.delete("/comments/:id", isAuth, async (req, res) => {
+apiRouter.delete("/comments/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
