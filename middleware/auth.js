@@ -49,6 +49,26 @@ export const jwtAuth = (req, res, next) =>
     }
   )(req, res, next);
 
+export const jwtPartialAuth = (req, res, next) =>
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err, user, info, status) => {
+      if (info && info.name && info.name === "TokenExpiredError") {
+        return res.status(401).json({ message: info.name });
+      } else if (
+        info &&
+        info.name &&
+        (info.name === "JsonWebTokenError" || info.name === "NoAuthToken")
+      ) {
+      } else if (info) {
+      } else {
+        req.user = user;
+      }
+      next();
+    }
+  )(req, res, next);
+
 export function createJwtAccessToken(payload) {
   return jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, {
     expiresIn: "20s",

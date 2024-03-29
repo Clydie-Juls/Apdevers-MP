@@ -10,6 +10,7 @@ import {
   createJwtAccessToken,
   createJwtRefreshToken,
   generateNewAccessToken,
+  jwtPartialAuth,
 } from "../middleware/auth.js";
 import dotenv from "dotenv";
 import passport from "passport";
@@ -21,6 +22,8 @@ const port = 3000;
 const apiRouter = express.Router();
 
 mongoose.connect("mongodb://127.0.0.1:27017/T3Db");
+
+const POST_LIMIT = 10;
 
 const passwordMatches = async (password, hash) => {
   try {
@@ -79,7 +82,7 @@ apiRouter.post(
 );
 
 // GET HTTP requests
-apiRouter.get("/users/:id", jwtAuth, async (req, res) => {
+apiRouter.get("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -144,9 +147,10 @@ apiRouter.get("/comments/:id", jwtAuth, async (req, res) => {
   }
 });
 
-app.get("/api/posts/recent", async (req, res) => {
+app.get("/api/posts/recent", jwtPartialAuth, async (req, res) => {
+  const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
-    const posts = await Post.find().sort({ uploadDate: -1 });
+    const posts = await Post.find().sort({ uploadDate: -1 }).limit(limit);
 
     const formattedPosts = posts.map((post) => ({
       ...post.toObject(),
@@ -167,7 +171,8 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-app.get("/api/posts/popular", async (req, res) => {
+app.get("/api/posts/popular", jwtPartialAuth, async (req, res) => {
+  const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
     const popularPosts = await Post.aggregate([
       {
@@ -177,7 +182,7 @@ app.get("/api/posts/popular", async (req, res) => {
         },
       },
       { $sort: { totalLikes: -1 } },
-    ]);
+    ]).limit(limit);
 
     const formattedPopularPosts = popularPosts.map((post) => ({
       ...post,
