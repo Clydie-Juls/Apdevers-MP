@@ -1,6 +1,7 @@
 import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 
+import { fetchWithTokenRefresh } from "../lib/authFetch";
 import AnimBackground from "@/components/custom/animBackground";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +53,8 @@ const EditLoginInfo = () => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const { response, data } = await fetchWithTokenRefresh(() =>
+    
+    await fetchWithTokenRefresh(() =>
       fetch(`/api/users/edit/${id}`, {
         method: "PUT",
         headers: {
