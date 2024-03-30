@@ -3,14 +3,15 @@ export async function fetchWithTokenRefresh(
   willRedirect = true
 ) {
   try {
-    console.log("FFFFFFF", fetchCallback);
     // Attempt the initial fetch call
     const response = await fetchCallback();
 
     // Assuming the response is JSON and includes a message field
     const data = await response.json();
 
-    if (data.message === "TokenExpiredError") {
+    console.log(response, sessionStorage.getItem("accessToken"));
+
+    if (data.message === "TokenRefreshNeed") {
       // If token expired, request a new access token
       const refreshResponse = await fetch("/api/account/token", {
         method: "POST",
@@ -20,26 +21,25 @@ export async function fetchWithTokenRefresh(
         },
       });
 
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        // Store the new access token in session storage
-        sessionStorage.setItem("accessToken", refreshData.accessToken);
-
-        // Retry the original fetch call with the new access token
-        // Assuming the fetchCallback can handle using the updated token from session storage
-        return fetchWithTokenRefresh(fetchCallback);
-      } else {
-        // If unable to refresh token, redirect to login
-        window.location.href = "/login";
-      }
+      console.log(
+        "1",
+        "/api/account/token",
+        response,
+        refreshResponse,
+        refreshResponse.ok
+      );
+      console.log("1.5");
+      const refreshData = await refreshResponse.json();
+      console.log(refreshData);
+      sessionStorage.setItem("accessToken", refreshData.accessToken);
+      return fetchWithTokenRefresh(fetchCallback);
     } else if (data.message === "Unauthorized") {
       // Redirect to login if unauthorized
-      if (willRedirect) {
-        window.location.href = "/login";
-      }
+      // if (willRedirect) {
+      //   window.location.href = "/login";
+      // }
     } else {
       // If no errors, return the original data
-      console.log({ response, data });
       return { response: response, data: data };
     }
   } catch (error) {

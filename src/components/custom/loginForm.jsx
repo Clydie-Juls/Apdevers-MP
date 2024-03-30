@@ -17,6 +17,7 @@ export function LoginForm() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+    keepLoggedIn: false,
   });
 
   const handleChange = (e) => {
@@ -31,10 +32,22 @@ export function LoginForm() {
     });
   };
 
+  const handleCheckboxChange = (e) => {
+    const { name } = e.target;
+    setFormData((prevData) => {
+      const updatedData = {
+        ...prevData,
+        [name]: e.target.checked,
+      };
+      console.log("Form Data:", updatedData);
+      return updatedData;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { username, password } = formData;
+      const { username, password, keepLoggedIn } = formData;
       if (!username || !password) {
         throw new Error("Please provide both username and password.");
       }
@@ -99,7 +112,18 @@ export function LoginForm() {
               />
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="keep-logged-in" />
+              <input
+                type="checkbox"
+                id="keep-logged-in"
+                name="keepLoggedIn"
+                checked={formData.keepLoggedIn}
+                onChange={handleCheckboxChange}
+              ></input>
+              {/* <Checkbox
+                id="keep-logged-in"
+                name="keepLoggedIn"
+                onChange={handleChange}
+              /> */}
               <label
                 htmlFor="keep-logged-in"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

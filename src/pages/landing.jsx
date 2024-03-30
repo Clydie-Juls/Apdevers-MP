@@ -44,8 +44,6 @@ const Landing = () => {
               })
             );
 
-          console.log("user:", userResponse);
-
           if (!userResponse.ok) {
             throw new Error("Failed to fetch user information");
           }

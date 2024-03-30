@@ -19,6 +19,7 @@ export const Account = {
         false
       );
 
+      console.log(response);
       if (response.ok) {
         return data;
       } else {

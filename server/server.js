@@ -23,7 +23,7 @@ const apiRouter = express.Router();
 
 mongoose.connect("mongodb://127.0.0.1:27017/T3Db");
 
-const POST_LIMIT = 10;
+const POST_LIMIT = 15;
 
 const passwordMatches = async (password, hash) => {
   try {
@@ -41,12 +41,21 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-function sendRefreshToken(res, refreshToken) {
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    maxAge: 14 * 24 * 60 * 60 * 1000, // milliseconds to 14 days(2 weeks)
-    secure: true,
-  });
+function sendRefreshToken(res, refreshToken, keepLoggedIn = false) {
+  if (keepLoggedIn) {
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      // maxAge: 14 * 24 * 60 * 60 * 1000, // milliseconds to 14 days(2 weeks)
+      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      secure: true,
+    });
+  } else {
+    console.log("sososos");
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+    });
+  }
 }
 
 // Images
@@ -334,7 +343,7 @@ apiRouter.post("/account/token", generateNewAccessToken);
 
 apiRouter.post("/account/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, keepLoggedIn } = req.body;
 
     const user = await User.findOne({ username });
 
@@ -357,7 +366,7 @@ apiRouter.post("/account/login", async (req, res) => {
 
     const accessToken = createJwtAccessToken({ username: username });
     const refreshToken = createJwtRefreshToken({ username: username });
-    sendRefreshToken(res, refreshToken);
+    sendRefreshToken(res, refreshToken, keepLoggedIn);
     await User.updateOne(
       { username: username },
       { $set: { refreshToken: refreshToken } }
