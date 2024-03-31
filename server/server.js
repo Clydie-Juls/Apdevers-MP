@@ -162,7 +162,7 @@ app.get("/api/posts/recent", jwtPartialAuth, async (req, res) => {
   const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
     const posts = await Post.find().sort({ uploadDate: -1 }).limit(limit);
-
+    
     const formattedPosts = posts.map((post) => ({
       ...post.toObject(),
       uploadDate: formatDate(post.uploadDate),

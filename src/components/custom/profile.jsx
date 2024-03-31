@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Account } from "@/lib/Account";
-import { useParams } from "react-router";
+// import { useParams } from "react-router";
 
 const Profile = () => {
   const [account, setAccount] = useState(null);
@@ -21,7 +21,8 @@ const Profile = () => {
   useEffect(() => {
     const checkLoginStatus = async () => {
       const isLoggedInDetail = await Account.isLoggedIn();
-      if (!isLoggedInDetail) {
+
+      if (isLoggedInDetail.isNull) {
         setAccount(null);
         return;
       }
