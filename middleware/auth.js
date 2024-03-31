@@ -16,7 +16,7 @@ passport.use(
     try {
       const user = await User.findOne({ username: jwtPayload.username }).lean();
       if (user) {
-        done(null, { user: user.username });
+        done(null, user.username);
       } else {
         done(null, false);
       }
@@ -26,58 +26,44 @@ passport.use(
   })
 );
 
-export const jwtAuth = (req, res, next) =>
-  passport.authenticate(
-    "jwt",
-    { session: false, failureRedirect: "/login" },
-    (err, user, info, status) => {
-      if (
-        info &&
-        info.name &&
-        (info.name === "TokenExpiredError" ||
-          info.name === "NoAuthTokenError" ||
-          (req.headers.authorization &&
-            req.headers.authorization.split(" ")[1] === "null"))
-      ) {
-        res.status(401).json({ message: "TokenRefreshNeed" });
-      } else if (info && info.name && info.name === "JsonWebTokenError") {
-        res.status(401).send({ message: "Unauthorized" });
-      } else if (info) {
-        res.status(401).send({ message: info.name });
-      } else {
-        req.user = user;
+export const jwtAuth = [
+  generateNewAccessToken,
+  passport.authenticate("jwt", {
+    session: false,
+  }),
+];
+
+export const jwtPartialAuth = [
+  generateNewAccessToken,
+  (req, res, next) =>
+    passport.authenticate(
+      "jwt",
+      { session: false },
+      (err, user, info, status) => {
+        if (!info) {
+          req.user = user;
+        }
         next();
       }
-    }
-  )(req, res, next);
-
-export const jwtPartialAuth = (req, res, next) =>
-  passport.authenticate(
-    "jwt",
-    { session: false },
-    (err, user, info, status) => {
-      if (
-        info &&
-        info.name &&
-        (info.name === "TokenExpiredError" ||
-          info.name === "NoAuthTokenError" ||
-          (req.headers.authorization &&
-            req.headers.authorization.split(" ")[1] === "null"))
-      ) {
-        return res.status(401).json({ message: "TokenRefreshNeed" });
-      } else if (info && info.name && info.name === "JsonWebTokenError") {
-      } else if (info) {
-      } else {
-        req.user = user;
-      }
-      next();
-    }
-  )(req, res, next);
+    )(req, res, next),
+];
 
 export function createJwtAccessToken(payload) {
   return jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, {
     expiresIn: "20s",
   });
+}
+
+function isTokenExpired(token) {
+  try {
+    const decoded = jwt.decode(token);
+    const expirationTime = decoded.exp * 1000; // Convert seconds to milliseconds
+    const currentTime = Date.now();
+    return currentTime > expirationTime;
+  } catch (err) {
+    // Handle invalid token or other errors
+    return true; // Assume expired for safety (or handle appropriately)
+  }
 }
 
 export function createJwtRefreshToken(payload, expiresIn = "14d") {
@@ -86,55 +72,32 @@ export function createJwtRefreshToken(payload, expiresIn = "14d") {
   });
 }
 
-export async function generateNewAccessToken(req, res) {
+export async function generateNewAccessToken(req, res, next) {
   const refreshToken = req.cookies.refreshToken;
-  const user = await User.findOne({ refreshToken: refreshToken }).lean();
-  if (!user) {
-    console.log("Refresh Token not recognized");
-    return res.status(401).json({ accessToken: "Wrong-token" });
+  if (!refreshToken) {
+    return next(); // Handle missing refresh token
   }
 
-  jwt.verify(
-    refreshToken,
-    process.env.JWT_REFRESH_TOKEN_SECRET,
-    async (err, payload) => {
-      if (err) {
-        console.log("Invalid Refresh Token 1");
-        return res.status(401).json({ accessToken: "Wrong-token" });
-      } else {
-        const user = await User.findOne({ refreshToken: refreshToken }).lean();
-        if (user) {
-          const accessToken = createJwtAccessToken({
-            username: payload.username,
-          });
-          return res.json({ accessToken: accessToken });
-        }
+  const [, accessToken] = req.headers.authorization?.split(" ");
+  if (isTokenExpired(accessToken)) {
+    try {
+      const payload = await jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_TOKEN_SECRET
+      );
+      const user = await User.findOne({ refreshToken: refreshToken }).lean();
 
-        console.log("Invalid Refresh Token 2");
-        res.status(401).json({ accessToken: "Wrong-token" });
+      if (user) {
+        const newAccessToken = createJwtAccessToken({
+          username: user.username,
+        });
+        res.setHeader("authorization", `Bearer ${newAccessToken}`);
+        req.headers.authorization = `Bearer ${newAccessToken}`;
+        return next();
       }
-    }
-  );
-}
-
-export let loggedInUsername;
-
-export function setLoggedInUser(name) {
-  if (loggedInUsername) {
-    console.warn("Replacing an already logged-in user...");
-  }
-
-  loggedInUsername = name;
-}
-
-export function isAuth(req, res, next) {
-  if (req.originalUrl.startsWith("/api/posts")) {
-    next();
-  } else {
-    if (loggedInUsername) {
-      next();
-    } else {
-      res.redirect("/login");
+    } catch (err) {
+      console.log("Rick Astley - Considers giving you up.");
     }
   }
+  next();
 }

@@ -9,7 +9,6 @@ import {
   jwtAuth,
   createJwtAccessToken,
   createJwtRefreshToken,
-  generateNewAccessToken,
   jwtPartialAuth,
 } from "../middleware/auth.js";
 import dotenv from "dotenv";
@@ -50,7 +49,6 @@ function sendRefreshToken(res, refreshToken, keepLoggedIn = false) {
       secure: true,
     });
   } else {
-    console.log("sososos");
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
@@ -339,8 +337,6 @@ apiRouter.get("/account/logincheck", jwtAuth, async (req, res, next) => {
   }
 });
 
-apiRouter.post("/account/token", generateNewAccessToken);
-
 apiRouter.post("/account/login", async (req, res) => {
   try {
     const { username, password, keepLoggedIn } = req.body;
@@ -476,19 +472,21 @@ apiRouter.put(
 
 apiRouter.post("/posts/like/:id", jwtAuth, async (req, res) => {
   try {
+    console.log("shop 1");
     const { id } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(404).json({ error: "The post does not exist." });
       return;
     }
 
+    console.log("shop 2");
     const liker = await User.findOne({ username: req.user });
     const isIncluded = await Post.findOne({
       _id: id,
       "reactions.likerIds": liker._id,
     });
 
+    console.log("shop 3");
     const { nModified } = !isIncluded
       ? await Post.updateOne(
           {
@@ -517,6 +515,7 @@ apiRouter.post("/posts/like/:id", jwtAuth, async (req, res) => {
       res.status(200).send("Like successfull");
     }
   } catch (e) {
+    console.log(e.message);
     res.status(500).json({ error: e.message });
   }
 });

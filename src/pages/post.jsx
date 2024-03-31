@@ -151,6 +151,7 @@ const Post = () => {
   }
 
   const onPostLikeClick = async () => {
+    console.log("YOYOYYO");
     const { response, data } = await fetchWithTokenRefresh(() =>
       fetch(`/api/posts/like/${id}`, {
         method: "POST",
