@@ -295,10 +295,12 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 // POST and PUT HTTP requests
 apiRouter.put("/users/edit/:id", jwtAuth, async (req, res) => {
   try {
-    let info = { username: req.body.username };
-    if (req.body.password) {
-      info.password = await bcrypt.hash(req.body.password, 10);
-    }
+    let info = { 
+      ...(req.body.username && { username: req.body.username }),
+      ...(req.body.password && { password: await bcrypt.hash(req.body.password, 10) }),
+      ...(req.body.description && { description: req.body.description }),
+    };
+
     const { nModified } = await User.updateOne(
       {
         username: req.user,
