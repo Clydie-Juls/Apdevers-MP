@@ -295,17 +295,16 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 // POST and PUT HTTP requests
 apiRouter.put("/users/edit/:id", jwtAuth, async (req, res) => {
   try {
-    let info = req.body;
-    if (info.password) {
+    let info = { username: req.body.username };
+    if (req.body.password) {
       info.password = await bcrypt.hash(req.body.password, 10);
     }
-
     const { nModified } = await User.updateOne(
       {
-        username: req.user.user,
+        username: req.user,
       },
       {
-        $set: req.body,
+        $set: info,
       }
     );
 
@@ -324,7 +323,7 @@ apiRouter.get("/account/logincheck", jwtAuth, async (req, res, next) => {
     }
 
     const userInfo = await User.findOne({
-      username: { $regex: new RegExp(req.user.user, "i") },
+      username: { $regex: new RegExp(req.user, "i") },
     });
 
     res.status(200).json({
