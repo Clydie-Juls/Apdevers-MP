@@ -45,7 +45,8 @@ function sendRefreshToken(res, refreshToken, keepLoggedIn = false) {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       // maxAge: 14 * 24 * 60 * 60 * 1000, // milliseconds to 14 days(2 weeks)
-      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      // expires: new Date(Date.now() + 60000), // for testing
+      expires: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
       secure: true,
     });
   } else {
@@ -55,6 +56,35 @@ function sendRefreshToken(res, refreshToken, keepLoggedIn = false) {
     });
   }
 }
+
+app.use(async (req, res, next) => {
+  if (req.cookies.refreshToken && req.cookies.refreshToken.expires) {
+    const user = await User.findOne(
+      {
+        refreshToken: req.cookies.refreshToken
+      }
+    );
+
+    const refreshToken = createJwtRefreshToken({ username : user.username });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      expires: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+      secure: true,
+    });
+
+    await User.updateOne(
+      {
+        refreshToken: req.cookies.refreshToken
+      },
+      {
+        refreshToken
+      }
+    );
+  }
+
+  next();
+});
 
 // Images
 
