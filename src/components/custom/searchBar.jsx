@@ -6,10 +6,19 @@ import { FilterSearch } from './filterSearch';
 
 const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [tags, setTags] = useState([]);
 
   const handleSearch = () => {
-    window.location.replace(`/searchpage?q=${encodeURIComponent(searchQuery)}`);
-  };
+    const queryParams = {};
+    if (searchQuery) {
+      queryParams.q = encodeURIComponent(searchQuery);
+    }
+    if (tags.length > 0) {
+      queryParams.t = tags.join(",");
+    }
+    const queryString = new URLSearchParams(queryParams).toString();
+    window.location.replace(`/searchpage?${queryString}`);
+  };  
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -29,8 +38,7 @@ const SearchBar = () => {
       <Button onClick={handleSearch}>
         <Search />
       </Button>
-      {/* TODO */}
-      <FilterSearch tags={[]} />
+      <FilterSearch onTagsChange={setTags} />
     </div>
   );
 };

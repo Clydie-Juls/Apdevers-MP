@@ -3,35 +3,37 @@ import Header from '@/components/custom/header';
 import AnimBackground from '@/components/custom/animBackground';
 import PostCard from '@/components/custom/postCard';
 import SearchHeader from '@/components/custom/searchHeader';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 const SearchPage = () => {
+  const [posts, setPosts] = useState([]);
   const [sortBy, setSortBy] = useState("recent");
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const searchQuery = urlParams.get('q') || '';
+        const tags = urlParams.get('t') ? urlParams.get('t').split(',') : [];
+        
+        const response = await fetch(`/api/posts/search?q=${encodeURIComponent(searchQuery)}&t=${tags.join(',')}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        const data = await response.json();
+        setPosts(data);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const handleSortChange = (value) => {
     setSortBy(value);
   };
-
-  const filterPosts = (posts, tags) => {
-    console.log("Tags:", tags); 
-    
-    const filteredPosts = posts.filter(post => {
-      return tags.some(tag => post.tags.includes(tag));
-    });
-    
-    console.log("Filtered Posts:", filteredPosts);
-    
-    return filteredPosts;
-  };
-  
 
   const sortPosts = (posts) => {
     switch (sortBy) {
@@ -44,53 +46,43 @@ const SearchPage = () => {
     }
   };
 
-  useEffect(() => {
-    alert('Sorry, to be implemented!');
-  }, []);
-
   return (
     <AnimBackground>
       <div className="w-full h-full bg-background">
         <Header />
-          <SearchHeader datePosted={'Oldest'} views={'Lowest'} searchResultsCount={'2'} tag1={'Internet'} tag2={'Delivery'} tag3={'Amazon'} />
+        <SearchHeader datePosted={'Oldest'} views={'Lowest'} searchResultsCount={posts.length} />
           
         <div className="flex flex-col gap-2 px-16 py-5">
-        {sortPosts(filterPosts([], ["Internet", "Delivery", "Amazon"])).map(p => {
-                  console.log("Post:", p); 
-                  return (
-                    <PostCard
-                      id={p.id} 
-                      key={p.id}
-                      title={p.title}
-                      author={'temp'}
-                      body={p.body}
-                      uploadDate={p.uploadDate}
-                      views={p.views}
-                      likes={p.likerIds.length}
-                      dislikes={p.dislikerIds.length}
-                      userRating={p.likerIds.includes(0) ? 'like' : 'dislike'}
-                      tags={p.tags}
-                    />
-                  );
-                })}
+          {sortPosts(posts).map(p => (
+            <PostCard
+              id={p.id} 
+              key={p.id}
+              title={p.title}
+              author={'temp'}
+              body={p.body}
+              uploadDate={p.uploadDate}
+              views={p.views}
+              likes={p.likerIds.length}
+              dislikes={p.dislikerIds.length}
+              userRating={p.likerIds.includes(0) ? 'like' : 'dislike'}
+              tags={p.tags}
+            />
+          ))}
         </div>
         {/* Pagination */}
         <Pagination className="mt-4">
-            <PaginationContent>
+          <PaginationContent>
             <PaginationItem>
-                <PaginationPrevious href="#" />
+              <PaginationPrevious href="#" />
             </PaginationItem>
             <PaginationItem>
-                {/* Make shown posts link based (item no. as param). */}
-                <PaginationLink href="#">1</PaginationLink>
+              {/* Make shown posts link based (item no. as param). */}
+              <PaginationLink href="#">1</PaginationLink>
             </PaginationItem>
             <PaginationItem>
-                <PaginationEllipsis />
+              <PaginationNext href="#" />
             </PaginationItem>
-            <PaginationItem>
-                <PaginationNext href="#" />
-            </PaginationItem>
-            </PaginationContent>
+          </PaginationContent>
         </Pagination>
       </div>
     </AnimBackground>

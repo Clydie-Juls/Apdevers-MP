@@ -1,14 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsTrigger, TabsList } from "@/components/ui/tabs";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import TagInput from "./tagInput";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsTrigger, TabsList } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import TagInput from './tagInput';
 
-export function FilterSearch({ tags, onTagsChange }) {
+export function FilterSearch({ onTagsChange }) {
+  const [tags, setTags] = useState([]);
+
+  const handleTagsChange = (newTags) => {
+    setTags(newTags);
+    onTagsChange(newTags);
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -25,10 +29,7 @@ export function FilterSearch({ tags, onTagsChange }) {
           <div className="grid gap-2">
             <div className="grid grid-cols-3 items-center gap-4">
               <Label>Date Posted</Label>
-              <Tabs
-                defaultValue="account"
-                className="w-[200px] col-span-2 px-2"
-              >
+              <Tabs defaultValue="account" className="w-[200px] col-span-2 px-2">
                 <TabsList className="w-full">
                   <TabsTrigger value="account">Oldest</TabsTrigger>
                   <TabsTrigger value="password">Newest</TabsTrigger>
@@ -37,10 +38,7 @@ export function FilterSearch({ tags, onTagsChange }) {
             </div>
             <div className="grid grid-cols-3 items-center gap-4">
               <Label>Popularity</Label>
-              <Tabs
-                defaultValue="account"
-                className="w-[200px] col-span-2 px-2"
-              >
+              <Tabs defaultValue="account" className="w-[200px] col-span-2 px-2">
                 <TabsList className="w-full">
                   <TabsTrigger value="account">Lowest</TabsTrigger>
                   <TabsTrigger value="password">Highest</TabsTrigger>
@@ -49,7 +47,9 @@ export function FilterSearch({ tags, onTagsChange }) {
             </div>
             <div className="flex flex-col gap-4 mt-6">
               <Label>Tags</Label>
-              <TagInput tags={tags} onChange={onTagsChange} />
+              <TagInput tags={tags} onChange={handleTagsChange} />
+              <div className="flex flex-wrap gap-2">
+              </div>
             </div>
           </div>
         </div>
