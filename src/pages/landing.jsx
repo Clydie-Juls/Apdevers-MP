@@ -7,12 +7,15 @@ import Header from "@/components/custom/header";
 import PostCard from "@/components/custom/postCard";
 import PostCardSkeleton from '@/components/custom/postCardSkeleton';
 import { Account } from '@/lib/Account';
+import { useNavigate } from 'react-router-dom';
 
 const Landing = () => {
   const [recentPosts, setRecentPosts] = useState([]);
   const [popularPosts, setPopularPosts] = useState([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [loadingPopular, setLoadingPopular] = useState(true);
+
+  const navigate = useNavigate();
 
   const [enableWritePost, setEnableWritePost] = useState(false);
 
@@ -107,6 +110,14 @@ const Landing = () => {
     fetchLoginStatus();
   }, []);
 
+  const handleWritePostClick = () => {
+    if (enableWritePost) {
+      navigate('/writePost');
+    } else {
+      navigate('/login', { state: { from: 'writePost', message: 'User must be logged in to use this feature' } });
+    }
+  };  
+
   return (
     <AnimBackground>
       <div className="w-full h-full bg-background">
@@ -121,8 +132,8 @@ const Landing = () => {
                 </TabsList>
                 <h2 className="text-3xl font-bold">Posts</h2>
               </div>
-              <Button asChild={enableWritePost} disabled={!enableWritePost}>
-                <a href="/writePost">Create a Post</a>
+              <Button onClick={handleWritePostClick}>
+                Create a Post
               </Button>
             </div>
             <TabsContent value="recent">

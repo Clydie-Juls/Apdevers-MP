@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardHeader,
@@ -14,6 +16,7 @@ import {
 import { Send, MoreVertical } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import RateButtons from "@/components/custom/rateButtons";
+import { Account } from '@/lib/Account';
 
 const CommentBody = ({
   id,
@@ -34,12 +37,35 @@ const CommentBody = ({
   onLikeClick,
   onDislikeClick,
 }) => {
-  console.log("likes", likes);
   const rating = likes.includes(ownerId)
     ? "like"
     : dislikes.includes(ownerId)
     ? "dislike"
     : "";
+
+  const [enableReply, setEnableReply] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchLoginStatus = async () => {
+      try {
+        const isLoggedIn = await Account.isLoggedIn();
+        setEnableReply(isLoggedIn);
+      } catch (error) {
+        console.error('Error fetching login status:', error);
+      }
+    };
+
+    fetchLoginStatus();
+  }, []);
+
+  const handleReplyClick = () => {
+    if (enableReply) {
+      navigate(`/reply/${postId}/${id}`);
+    } else {
+      navigate('/login', { state: { message: 'User must be logged in to use this feature' } });
+    }
+  };
 
   return (
     <Card className="mb-2">
@@ -93,7 +119,7 @@ const CommentBody = ({
           <Button
             variant="ghost"
             style={{ width: "100px" }}
-            onClick={() => window.location.replace(`/reply/${postId}/${id}`)}
+            onClick={handleReplyClick}
           >
             <Send style={{ width: "1.5rem", height: "1.5rem" }} />
             Reply

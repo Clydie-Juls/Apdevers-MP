@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardHeader,
@@ -15,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Account } from '@/lib/Account';
 
 const PostBody = ({ 
   id, 
@@ -33,12 +35,30 @@ const PostBody = ({
     : dislikerIds.includes(accountId)
     ? "dislike"
     : "";
-  
+
+  const [enableWriteComment, setEnableWriteComment] = useState(false);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    console.log("Received id:", id);
-    console.log("Received tags:", tags);
-    console.log("Received paragraph:", paragraph);
-  }, [id, tags, paragraph]);
+    const fetchLoginStatus = async () => {
+      try {
+        const isLoggedIn = await Account.isLoggedIn();
+        setEnableWriteComment(isLoggedIn);
+      } catch (error) {
+        console.error('Error fetching login status:', error);
+      }
+    };
+
+    fetchLoginStatus();
+  }, []);
+
+  const handleAddCommentClick = () => {
+    if (enableWriteComment) {
+      navigate(`/writecomment/${id}`);
+    } else {
+      navigate('/login', { state: { message: 'User must be logged in to use this feature' } });
+    }
+  };
 
   return (
     <Card className="mb-14">
@@ -74,7 +94,7 @@ const PostBody = ({
           <Button
             variant="ghost"
             style={{ width: "180px" }}
-            onClick={() => location.replace(`/writecomment/${id}`)}
+            onClick={handleAddCommentClick}
           >
             <Send style={{ width: "1.5rem", height: "1.5rem" }} />
             Add a comment
