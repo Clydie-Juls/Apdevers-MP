@@ -8,6 +8,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 const SearchPage = () => {
   const [posts, setPosts] = useState([]);
   const [sortBy, setSortBy] = useState("recent");
+  const [loading, setLoading] = useState(true);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -16,15 +18,33 @@ const SearchPage = () => {
         const urlParams = new URLSearchParams(queryString);
         const searchQuery = urlParams.get('q') || '';
         const tags = urlParams.get('t') ? urlParams.get('t').split(',') : [];
+        setTags(tags); 
         
         const response = await fetch(`/api/posts/search?q=${encodeURIComponent(searchQuery)}&t=${tags.join(',')}`);
         if (!response.ok) {
           throw new Error('Failed to fetch posts');
         }
         const data = await response.json();
-        setPosts(data);
+
+        const postsWithAuthors = await Promise.all(data.map(async post => {
+          const authorResponse = await fetch(`/api/users/${post.posterId}`);
+          if (!authorResponse.ok) {
+            throw new Error('Failed to fetch author information');
+          }
+          const authorData = await authorResponse.json();
+          return {
+            ...post,
+            author: authorData.user.username,
+            likes: post.reactions.likerIds.length, 
+            dislikes: post.reactions.dislikerIds.length 
+          };
+        }));
+
+        setPosts(postsWithAuthors);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching posts:', error);
+        setLoading(false);
       }
     };
 
@@ -50,24 +70,28 @@ const SearchPage = () => {
     <AnimBackground>
       <div className="w-full h-full bg-background">
         <Header />
-        <SearchHeader datePosted={'Oldest'} views={'Lowest'} searchResultsCount={posts.length} />
+        <SearchHeader datePosted={'Oldest'} views={'Lowest'} searchResultsCount={posts.length} tags={tags} />
           
         <div className="flex flex-col gap-2 px-16 py-5">
-          {sortPosts(posts).map(p => (
-            <PostCard
-              id={p.id} 
-              key={p.id}
-              title={p.title}
-              author={'temp'}
-              body={p.body}
-              uploadDate={p.uploadDate}
-              views={p.views}
-              likes={p.likerIds.length}
-              dislikes={p.dislikerIds.length}
-              userRating={p.likerIds.includes(0) ? 'like' : 'dislike'}
-              tags={p.tags}
-            />
-          ))}
+          {loading ? (
+            <div>Loading...</div>
+          ) : (
+            sortPosts(posts).map(p => (
+              <PostCard
+                key={p.id} 
+                id={p.id} 
+                title={p.title}
+                author={p.author} 
+                body={p.body}
+                uploadDate={p.uploadDate}
+                views={p.views}
+                likes={p.likes}
+                dislikes={p.dislikes}
+                userRating={p.userRating}
+                tags={p.tags}
+              />
+            ))
+          )}
         </div>
         {/* Pagination */}
         <Pagination className="mt-4">

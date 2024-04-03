@@ -186,7 +186,7 @@ app.get("/api/posts/popular", async (req, res) => {
 });
 
 // Example: '/search?q=post%20title&t=tag1,tag2&do=asc&po=desc'
-apiRouter.get("/posts/search", async (req, res) => {
+app.get("/api/posts/search", async (req, res) => {
   try {
     const titleQuery = req.query.q || "";
     const tagsQuery = req.query.t ? req.query.t.split(",") : null;
@@ -203,7 +203,7 @@ apiRouter.get("/posts/search", async (req, res) => {
           },
           ...(tagsQuery && { tags: { $all: tagsQuery } }),
         },
-      },
+      },      
       {
         $addFields: {
           likeCount: { $size: "$reactions.likerIds" },
@@ -228,7 +228,7 @@ apiRouter.get("/posts/search", async (req, res) => {
           likeToDislikeRatio: popularityOrder === "asc" ? 1 : -1,
         },
       },
-    ]);
+    ]);    
 
     res.status(200).json(posts);
   } catch (e) {
