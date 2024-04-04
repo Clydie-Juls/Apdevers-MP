@@ -72,12 +72,7 @@ const SignupForm = () => {
           <div className="grid w-full items-center gap-4 mb-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="e.g. John Doe"
-                required
-              />
+              <Input id="username" name="username" minlength="3" placeholder="e.g. John Doe" required />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="password">Password</Label>
@@ -85,6 +80,7 @@ const SignupForm = () => {
                 type="password"
                 id="password"
                 name="password"
+                minlength="7"
                 placeholder="********"
                 required
               />
@@ -95,6 +91,7 @@ const SignupForm = () => {
                 type="password"
                 id="conf-password"
                 name="conf-password"
+                minlength="7"
                 placeholder="********"
                 required
                 onChange={handleConfirmPasswordChange}

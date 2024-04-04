@@ -72,6 +72,12 @@ const PostEditor = ({ isWritePost }) => {
     e.preventDefault();
     const formElem = formRef.current;
 
+    formElem.reportValidity();
+
+    if (!formElem.checkValidity()) {
+      return;
+    }
+    
     const formBody = new FormData(formElem);
     let formDataObj = Object.fromEntries(formBody.entries());
     formDataObj.tags = [];
@@ -128,6 +134,7 @@ const PostEditor = ({ isWritePost }) => {
                 id="title"
                 name="title"
                 placeholder="Bro Richie Finally Created GPT 5.0"
+                required
               />
             ) : (
               <Input
@@ -135,6 +142,7 @@ const PostEditor = ({ isWritePost }) => {
                 id="title"
                 name="title"
                 value={postInfo.title}
+                required
                 onInput={(e) =>
                   setPostInfo((pi) => ({ ...pi, title: e.target.value }))
                 }
@@ -161,6 +169,7 @@ const PostEditor = ({ isWritePost }) => {
                 placeholder="Type your message here."
                 id="description"
                 name="body"
+                required
               />
             ) : (
               <Textarea
@@ -168,6 +177,7 @@ const PostEditor = ({ isWritePost }) => {
                 id="description"
                 name="body"
                 value={postInfo.body}
+                required
                 onInput={(e) =>
                   setPostInfo((pi) => ({ ...pi, body: e.target.value }))
                 }

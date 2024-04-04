@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
   const [formData, setFormData] = useState({
     body: "",
   });
+
+  const formRef = useRef();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -67,6 +69,12 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    formRef.current.reportValidity();
+
+    if (!formRef.current.checkValidity()) {
+      return;
+    }
+
     try {
       if (isWriteComment) {
         console.log(e.target.body.value);
@@ -142,6 +150,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
         <Separator />
       </div>
       <form
+        ref={formRef}
         className="w-full"
         method={isWriteComment ? "POST" : "PUT"}
         onSubmit={handleSubmit}
