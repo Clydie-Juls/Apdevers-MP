@@ -335,13 +335,13 @@ apiRouter.put(
   "/users/edit/:id",
   [
     check("username")
-      .notEmpty()
-      .withMessage("Username should not be empty.")
+      .optional({ values: "falsy" })
+      // .withMessage("Username should not be empty.")
       .isLength({ min: 3 })
       .withMessage("Username should be at least 3 characters."),
     check("password")
-      .notEmpty()
-      .withMessage("Password should not be empty.")
+      .optional({ values: "falsy" })
+      // .withMessage("Password should not be empty.")
       .isLength({ min: 7 })
       .withMessage("Password should be at least 7 characters."),
     jwtAuth,
@@ -540,7 +540,7 @@ apiRouter.post(
         tags: req.body.tags,
       });
 
-      res.status(201).send(`/post/${newPost._id}`);
+      res.status(201).send({ url: `/post/${newPost._id}` });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -907,6 +907,7 @@ apiRouter.delete("/users/:id", jwtAuth, async (req, res) => {
       }
     );
 
+    console.log("WOAG");
     res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send(`User ${req.params.id} deleted successfully`);
   } catch (e) {

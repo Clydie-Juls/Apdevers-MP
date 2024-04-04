@@ -74,7 +74,10 @@ export async function generateNewAccessToken(req, res, next) {
     return next(); // Handle missing refresh token
   }
 
-  const [, accessToken] = req.headers.authorization?.split(" ");
+  console.log(req.headers.authorization);
+  const [, accessToken] = req.headers.authorization
+    ? req.headers.authorization?.split(" ")
+    : " ";
   if (isTokenExpired(accessToken)) {
     try {
       await jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN_SECRET);

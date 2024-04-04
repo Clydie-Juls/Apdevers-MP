@@ -48,7 +48,9 @@ const ProfileSide = ({
   };
 
   const handleDescElemBlur = (e) => {
+    console.log("DDDD");
     if (descEditable) {
+      console.log("FOPEP");
       onDescriptionSet(e.target.value);
       setDescEditable(false);
     }

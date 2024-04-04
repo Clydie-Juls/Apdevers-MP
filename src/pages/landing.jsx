@@ -79,7 +79,7 @@ const Landing = () => {
 
   const fetchPopularPosts = async () => {
     try {
-      const { response, data } = await fetchWithTokenRefresh(() =>
+      const { response } = await fetchWithTokenRefresh(() =>
         fetch(`/api/posts/popular`, {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
@@ -91,44 +91,54 @@ const Landing = () => {
       }
 
       const data = await response.json();
-      
-      const formattedPopularPosts = await Promise.all(data.map(async (post) => {
-        const { response: userResponse, data: userData } =
-          await fetchWithTokenRefresh(() =>
-            fetch(`/api/users/${post.posterId}`, {
-              headers: {
-                Authorization: `Bearer ${sessionStorage.getItem(
-                  "accessToken"
-                )}`,
-              },
-            })
-          );
-        
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch user information');
-        }
-        const username = userData.user.username;
-        
-        const account = await Account.getDetails();
 
-        return {
-          ...post,
-          likes: post.reactions.likerIds.length, 
-          dislikes: post.reactions.dislikerIds.length,
-          ...(account ? 
-            ({ userRating: post.reactions.likerIds.includes(account._id) ? 'like' : post.reactions.dislikerIds.includes(account._id) ? 'dislike' : '' })
-            : ({})),
-          author: username 
-        };
-      }));
+      const formattedPopularPosts = await Promise.all(
+        data.map(async (post) => {
+          const { response: userResponse, data: userData } =
+            await fetchWithTokenRefresh(() =>
+              fetch(`/api/users/${post.posterId}`, {
+                headers: {
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "accessToken"
+                  )}`,
+                },
+              })
+            );
 
-      const postsWithRatio = formattedPopularPosts.map(post => ({
+          if (!userResponse.ok) {
+            throw new Error("Failed to fetch user information");
+          }
+          const username = userData.user.username;
+
+          const account = await Account.getDetails();
+
+          return {
+            ...post,
+            likes: post.reactions.likerIds.length,
+            dislikes: post.reactions.dislikerIds.length,
+            ...(account
+              ? {
+                  userRating: post.reactions.likerIds.includes(account._id)
+                    ? "like"
+                    : post.reactions.dislikerIds.includes(account._id)
+                    ? "dislike"
+                    : "",
+                }
+              : {}),
+            author: username,
+          };
+        })
+      );
+
+      const postsWithRatio = formattedPopularPosts.map((post) => ({
         ...post,
         likeDislikeRatio: post.likes / (post.likes + post.dislikes) || 0,
       }));
 
-      const sortedPopularPosts = postsWithRatio.sort((a, b) => b.likeDislikeRatio - a.likeDislikeRatio);
-      
+      const sortedPopularPosts = postsWithRatio.sort(
+        (a, b) => b.likeDislikeRatio - a.likeDislikeRatio
+      );
+
       setPopularPosts(sortedPopularPosts);
       setLoadingPopular(false);
     } catch (error) {
