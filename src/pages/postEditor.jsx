@@ -5,71 +5,101 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import TagInput from "@/components/custom/tagInput";
 import { useParams } from "react-router";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
+import { Account } from "@/lib/Account";
 
 const PostEditor = ({ isWritePost }) => {
   const { id } = useParams();
   const formRef = useRef();
 
   const [postInfo, setPostInfo] = useState({
-    title: '',
-    body: '',
-    tags: ["Technology", "Programming"]
+    title: "",
+    body: "",
+    tags: ["Technology", "Programming"],
   });
 
   useEffect(() => {
     if (!isWritePost && !id) {
-      location.replace('/');
+      location.replace("/");
       return;
     }
 
     const fetchData = async () => {
-      const response = await fetch(`/api/posts/${id}`);
+      const { response, data } = await fetchWithTokenRefresh(() =>
+        fetch(`/api/posts/${id}`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          },
+        })
+      );
 
       if (response.status === 404) {
         setPostInfo(null);
         return;
       }
 
-      const { post } = await response.json();
+      const { post } = data;
       setPostInfo({
         title: post.title,
         body: post.body,
-        tags: post.tags
+        tags: post.tags,
       });
     };
 
-    if (!isWritePost) {
-      fetchData();
-    }
+    const checkedIfLoggedIn = async () => {
+      const isloggedIn = await Account.isLoggedIn();
+      if (!isloggedIn) {
+        window.location.replace("/login");
+      }
+
+      if (!isWritePost) {
+        fetchData();
+      }
+    };
+
+    checkedIfLoggedIn();
   }, [id, isWritePost]);
 
   function handleTagsChange(newTags) {
-    setPostInfo(pi => ({
+    setPostInfo((pi) => ({
       ...pi,
-      tags: newTags
-    }))
+      tags: newTags,
+    }));
   }
 
   async function handleFormSubmit(e) {
     e.preventDefault();
     const formElem = formRef.current;
-    
+
     const formBody = new FormData(formElem);
-    postInfo.tags.forEach(t => formBody.append('tags[]', t));
-    
-    const postUrl = (!id) ? 
-      await fetch('/api/posts/write', {
-        method: 'post',
-        body: formBody
-      })
-    :
-      await fetch(`/api/posts/edit/${id}`, {
-        method: 'put',
-        body: formBody
-      });
-    
-    location.replace(await postUrl.text());
+    let formDataObj = Object.fromEntries(formBody.entries());
+    formDataObj.tags = [];
+    postInfo.tags.forEach((t) => formDataObj.tags.push(t));
+
+    const { response, data } = !id
+      ? await fetchWithTokenRefresh(() =>
+          fetch(`/api/posts/write`, {
+            method: "POST",
+            headers: {
+              "Content-type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+            body: JSON.stringify(formDataObj),
+          })
+        )
+      : await fetchWithTokenRefresh(() =>
+          fetch(`/api/posts/edit/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+            body: JSON.stringify(formDataObj),
+          })
+        );
+
+    location.replace(data.url);
   }
 
   return (
@@ -100,12 +130,14 @@ const PostEditor = ({ isWritePost }) => {
                 placeholder="Bro Richie Finally Created GPT 5.0"
               />
             ) : (
-              <Input 
-                className="bg-black" 
-                id="title" 
-                name="title" 
+              <Input
+                className="bg-black"
+                id="title"
+                name="title"
                 value={postInfo.title}
-                onInput={(e) => setPostInfo(pi => ({ ...pi, title: e.target.value }))}
+                onInput={(e) =>
+                  setPostInfo((pi) => ({ ...pi, title: e.target.value }))
+                }
               />
             )}
 
@@ -136,7 +168,9 @@ const PostEditor = ({ isWritePost }) => {
                 id="description"
                 name="body"
                 value={postInfo.body}
-                onInput={(e) => setPostInfo(pi => ({ ...pi, body: e.target.value }))}
+                onInput={(e) =>
+                  setPostInfo((pi) => ({ ...pi, body: e.target.value }))
+                }
               />
             )}
 
@@ -146,7 +180,9 @@ const PostEditor = ({ isWritePost }) => {
             </p>
           </div>
 
-          <Button className="px-9" onClick={handleFormSubmit}>Submit</Button>
+          <Button className="px-9" onClick={handleFormSubmit}>
+            Submit
+          </Button>
         </div>
       </form>
     </div>
