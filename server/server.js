@@ -2,7 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
 import bcrypt from "bcrypt";
-import { body, check, validationResult } from 'express-validator';
+import { check, validationResult } from "express-validator";
 
 import { User } from "../models/user.js";
 import { Post } from "../models/post.js";
@@ -61,13 +61,11 @@ function sendRefreshToken(res, refreshToken, keepLoggedIn = false) {
 
 app.use(async (req, res, next) => {
   if (req.cookies.refreshToken && req.cookies.refreshToken.expires) {
-    const user = await User.findOne(
-      {
-        refreshToken: req.cookies.refreshToken
-      }
-    );
+    const user = await User.findOne({
+      refreshToken: req.cookies.refreshToken,
+    });
 
-    const refreshToken = createJwtRefreshToken({ username : user.username });
+    const refreshToken = createJwtRefreshToken({ username: user.username });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -77,10 +75,10 @@ app.use(async (req, res, next) => {
 
     await User.updateOne(
       {
-        refreshToken: req.cookies.refreshToken
+        refreshToken: req.cookies.refreshToken,
       },
       {
-        refreshToken
+        refreshToken,
       }
     );
   }
@@ -198,7 +196,7 @@ app.get("/api/posts/recent", jwtPartialAuth, async (req, res) => {
           totalDislikes: { $size: "$reactions.dislikerIds" },
         },
       },
-      { $sort: { uploadDate: -1 } } 
+      { $sort: { uploadDate: -1 } },
     ]).limit(limit);
 
     const formattedRecentPosts = recentPosts.map((post) => ({
@@ -334,31 +332,33 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
 
 // POST and PUT HTTP requests
 apiRouter.put(
-  "/users/edit/:id", 
+  "/users/edit/:id",
   [
-    check('username')
+    check("username")
       .notEmpty()
-      .withMessage('Username should not be empty.')
+      .withMessage("Username should not be empty.")
       .isLength({ min: 3 })
-      .withMessage('Username should be at least 3 characters.'),
-    check('password')
+      .withMessage("Username should be at least 3 characters."),
+    check("password")
       .notEmpty()
-      .withMessage('Password should not be empty.')
+      .withMessage("Password should not be empty.")
       .isLength({ min: 7 })
-      .withMessage('Password should be at least 7 characters.'),
+      .withMessage("Password should be at least 7 characters."),
     jwtAuth,
-  ], 
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array() });
     }
-    
+
     try {
-       let info = { 
+      let info = {
         ...(req.body.username && { username: req.body.username }),
-        ...(req.body.password && { password: await bcrypt.hash(req.body.password, 10) }),
+        ...(req.body.password && {
+          password: await bcrypt.hash(req.body.password, 10),
+        }),
         ...(req.body.description && { description: req.body.description }),
       };
 
@@ -400,19 +400,19 @@ apiRouter.get("/account/logincheck", jwtAuth, async (req, res, next) => {
 });
 
 apiRouter.post(
-  "/account/login", 
+  "/account/login",
   [
-    check('username')
+    check("username")
       .notEmpty()
-      .withMessage('Username should not be empty.')
+      .withMessage("Username should not be empty.")
       .isLength({ min: 3 })
-      .withMessage('Username should be at least 3 characters.'),
-    check('password')
+      .withMessage("Username should be at least 3 characters."),
+    check("password")
       .notEmpty()
-      .withMessage('Password should not be empty.')
+      .withMessage("Password should not be empty.")
       .isLength({ min: 7 })
-      .withMessage('Password should be at least 7 characters.'),
-  ], 
+      .withMessage("Password should be at least 7 characters."),
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -452,19 +452,19 @@ apiRouter.post(
 );
 
 apiRouter.post(
-  "/account/signup", 
+  "/account/signup",
   [
-    check('username')
+    check("username")
       .notEmpty()
-      .withMessage('Username should not be empty.')
+      .withMessage("Username should not be empty.")
       .isLength({ min: 3 })
-      .withMessage('Username should be at least 3 characters.'),
-    check('password')
+      .withMessage("Username should be at least 3 characters."),
+    check("password")
       .notEmpty()
-      .withMessage('Password should not be empty.')
+      .withMessage("Password should not be empty.")
       .isLength({ min: 7 })
-      .withMessage('Password should be at least 7 characters.'),
-  ], 
+      .withMessage("Password should be at least 7 characters."),
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -474,14 +474,16 @@ apiRouter.post(
 
     try {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      const refreshToken = createJwtRefreshToken({ username: req.body.username });
-      
-      const user = await User.create({
+      const refreshToken = createJwtRefreshToken({
+        username: req.body.username,
+      });
+
+      await User.create({
         username: req.body.username,
         password: hashedPassword,
         refreshToken: refreshToken,
       });
-      
+
       sendRefreshToken(res, refreshToken);
       const accessToken = createJwtAccessToken({ username: req.body.username });
       res.status(201).json({ accessToken: accessToken });
@@ -508,26 +510,24 @@ apiRouter.post("/account/logout/:id", async (req, res) => {
 });
 
 apiRouter.post(
-  "/posts/write", 
+  "/posts/write",
   [
+    jwtAuth,
     multer().array(),
-    check('title')
-      .notEmpty()
-      .withMessage('Post title cannot be empty.'),
-    check('body')
-      .notEmpty()
-      .withMessage('Post body cannot be empty.'),
-    isAuth, 
-  ], 
+    check("title").notEmpty().withMessage("Post title cannot be empty."),
+    check("body").notEmpty().withMessage("Post body cannot be empty."),
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array() });
     }
-    
+
     try {
-      const poster = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+      const poster = await User.findOne({
+        username: { $regex: new RegExp(req.user, "i") },
+      });
 
       const newPost = await Post.create({
         title: req.body.title,
@@ -548,17 +548,13 @@ apiRouter.post(
 );
 
 apiRouter.put(
-  "/posts/edit/:id", 
+  "/posts/edit/:id",
   [
     multer().array(),
-    check('title')
-      .notEmpty()
-      .withMessage('Post title cannot be empty.'),
-    check('body')
-      .notEmpty()
-      .withMessage('Post body cannot be empty.'),
+    check("title").notEmpty().withMessage("Post title cannot be empty."),
+    check("body").notEmpty().withMessage("Post body cannot be empty."),
     jwtAuth,
-  ], 
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -723,16 +719,12 @@ apiRouter.post("/posts/unreact/:id", jwtAuth, async (req, res) => {
 });
 
 apiRouter.post(
-  "/comments/write", 
+  "/comments/write",
   [
-    check('postId')
-      .notEmpty()
-      .withMessage('Post ID cannot be empty.'),
-    check('body')
-      .notEmpty()
-      .withMessage('Comment body cannot be empty.'),
-    jwtAuth
-  ], 
+    check("postId").notEmpty().withMessage("Post ID cannot be empty."),
+    check("body").notEmpty().withMessage("Comment body cannot be empty."),
+    jwtAuth,
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -741,7 +733,9 @@ apiRouter.post(
     }
 
     try {
-      const commenter = await User.findOne({ username: { $regex: new RegExp(loggedInUsername, "i") } });
+      const commenter = await User.findOne({
+        username: { $regex: new RegExp(req.user, "i") },
+      });
 
       const newComment = await Comment.create({
         commenterId: commenter._id,
@@ -762,13 +756,11 @@ apiRouter.post(
 );
 
 apiRouter.put(
-  "/comments/edit/:id", 
+  "/comments/edit/:id",
   [
-    check('body')
-      .notEmpty()
-      .withMessage('Comment body cannot be empty.'),
-    isAuth
-  ], 
+    jwtAuth,
+    check("body").notEmpty().withMessage("Comment body cannot be empty."),
+  ],
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -904,14 +896,14 @@ apiRouter.delete("/users/:id", jwtAuth, async (req, res) => {
 
     await User.updateOne(
       {
-        _id: currUser._id
+        _id: currUser._id,
       },
       {
-        username: '[Deleted]',
+        username: "[Deleted]",
         password: null,
-        description: '[Deleted]',
-        picture: 'https://github.com/shadcn.png',
-        deleted: true
+        description: "[Deleted]",
+        picture: "https://github.com/shadcn.png",
+        deleted: true,
       }
     );
 

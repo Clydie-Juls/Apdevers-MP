@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Account } from "@/lib/Account";
-import { useParams } from "react-router";
 
 const Profile = () => {
   const [account, setAccount] = useState(null);

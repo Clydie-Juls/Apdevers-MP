@@ -11,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -47,7 +46,7 @@ export function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { username, password, keepLoggedIn } = formData;
+      const { username, password } = formData;
       if (!username || !password) {
         throw new Error("Please provide both username and password.");
       }
