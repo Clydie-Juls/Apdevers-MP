@@ -213,6 +213,10 @@ const Landing = () => {
             </TabsContent>
           </Tabs>
         </main>
+
+        <footer className="mt-4 text-gray-400 hover:text-lime-600 text-center underline">
+          <a href="/about">About the site</a>
+        </footer>
       </div>
     </AnimBackground>
   );
