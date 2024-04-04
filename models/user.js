@@ -21,12 +21,13 @@ const UserSchema = new mongoose.Schema({
   // Will implement default image later
   picture: {
     type: String,
-    default: 'https://github.com/shadcn.png'
+    default: "https://github.com/shadcn.png",
   },
   deleted: {
     type: Boolean,
     default: false
-  }
+  },
+  refreshToken: String,
 });
 
 export const User = mongoose.model("User", UserSchema);
