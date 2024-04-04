@@ -36,16 +36,12 @@ export const jwtAuth = [
 export const jwtPartialAuth = [
   generateNewAccessToken,
   (req, res, next) =>
-    passport.authenticate(
-      "jwt",
-      { session: false },
-      (err, user, info, status) => {
-        if (!info) {
-          req.user = user;
-        }
-        next();
+    passport.authenticate("jwt", { session: false }, (err, user, info) => {
+      if (!info) {
+        req.user = user;
       }
-    )(req, res, next),
+      next();
+    })(req, res, next),
 ];
 
 export function createJwtAccessToken(payload) {
@@ -78,13 +74,13 @@ export async function generateNewAccessToken(req, res, next) {
     return next(); // Handle missing refresh token
   }
 
-  const [, accessToken] = req.headers.authorization?.split(" ");
+  console.log(req.headers.authorization);
+  const [, accessToken] = req.headers.authorization
+    ? req.headers.authorization?.split(" ")
+    : " ";
   if (isTokenExpired(accessToken)) {
     try {
-      const payload = await jwt.verify(
-        refreshToken,
-        process.env.JWT_REFRESH_TOKEN_SECRET
-      );
+      await jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN_SECRET);
       const user = await User.findOne({ refreshToken: refreshToken }).lean();
 
       if (user) {

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -16,24 +16,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const PostBody = ({ 
-  id, 
-  accountId, 
-  numComments, 
-  tags, 
-  paragraph, 
+const PostBody = ({
+  id,
+  accountId,
+  numComments,
+  tags,
+  paragraph,
   onDeleteButtonClick,
   likerIds,
   dislikerIds,
-  onLikeClick, 
-  onDislikeClick 
+  onLikeClick,
+  onDislikeClick,
 }) => {
   const rating = likerIds.includes(accountId)
     ? "like"
     : dislikerIds.includes(accountId)
     ? "dislike"
     : "";
-  
+
   useEffect(() => {
     console.log("Received id:", id);
     console.log("Received tags:", tags);
@@ -62,10 +62,10 @@ const PostBody = ({
       </CardContent>
 
       <CardFooter className="flex justify-start gap-5">
-        <RateButtons 
-          likes={likerIds.length} 
-          dislikes={dislikerIds.length} 
-          horizontal 
+        <RateButtons
+          likes={likerIds.length}
+          dislikes={dislikerIds.length}
+          horizontal
           userRating={rating}
           onLikeClick={onLikeClick}
           onDislikeClick={onDislikeClick}

@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import fetch from "node-fetch";
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -25,7 +24,7 @@ const UserSchema = new mongoose.Schema({
   },
   deleted: {
     type: Boolean,
-    default: false
+    default: false,
   },
   refreshToken: String,
 });

@@ -79,7 +79,8 @@ const User = () => {
       method: "delete",
     });
 
-    console.log(123);
+    sessionStorage.setItem("accessToken", "");
+    window.location.replace("/");
   }
 
   function handleDescriptionInput(newDescription) {
