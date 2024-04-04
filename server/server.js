@@ -374,7 +374,7 @@ apiRouter.post("/account/login", async (req, res) => {
 
     const user = await User.findOne({ username });
 
-    if (!user) {
+    if (!user || user.deleted) {
       return res
         .status(401)
         .send("Login not successful. Invalid username or password.");
@@ -780,9 +780,18 @@ apiRouter.delete("/users/:id", jwtAuth, async (req, res) => {
   try {
     const currUser = await User.findOne({ _id: req.params.id });
 
-    await User.deleteOne({ _id: currUser._id });
-    await Post.deleteMany({ posterId: currUser._id });
-    await Comment.deleteMany({ commenterId: currUser._id });
+    await User.updateOne(
+      {
+        _id: currUser._id
+      },
+      {
+        username: '[Deleted]',
+        password: null,
+        description: '[Deleted]',
+        picture: 'https://github.com/shadcn.png',
+        deleted: true
+      }
+    );
 
     res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send(`User ${req.params.id} deleted successfully`);
