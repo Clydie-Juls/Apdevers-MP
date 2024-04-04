@@ -26,3 +26,4 @@ const SearchHeader = ({ datePosted, views, searchResultsCount, tags }) => {
 };
 
 export default SearchHeader;
+

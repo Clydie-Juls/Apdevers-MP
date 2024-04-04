@@ -10,6 +10,7 @@ import PostCard from "@/components/custom/postCard";
 import CommentCard from "@/components/custom/commentCard";
 import ProfileSide from "@/components/custom/profileSide";
 import { Account } from "@/lib/Account";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
 
 const User = () => {
   const { id } = useParams();
@@ -33,20 +34,30 @@ const User = () => {
     }
 
     const fetchData = async () => {
-      const response = await fetch(`/api/users/${id}`);
+      const { response, data } = await fetchWithTokenRefresh(() =>
+        fetch(`/api/users/${id}`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          },
+        })
+      );
 
       if (response.status === 404) {
         setUserInfo(null);
         return;
       }
 
-      const info = await response.json();
+      const info = data;
       setUserInfo({
         ...info,
-        posts: await Promise.all(info.posts.map(async p => {
-          const author = (await (await fetch(`/api/users/${p.posterId}`)).json()).user.username;
-          return { ...p, author }
-        }))
+        posts: await Promise.all(
+          info.posts.map(async (p) => {
+            const author = (
+              await (await fetch(`/api/users/${p.posterId}`)).json()
+            ).user.username;
+            return { ...p, author };
+          })
+        ),
       });
     };
 
@@ -68,7 +79,8 @@ const User = () => {
       method: "delete",
     });
 
-    location.replace("/");
+    sessionStorage.setItem("accessToken", "");
+    window.location.replace("/");
   }
 
   function handleDescriptionInput(newDescription) {
@@ -82,15 +94,20 @@ const User = () => {
   }
 
   async function handleDescriptionSet(newDescription) {
-    await fetch(`/api/users/edit/${id}`, {
-      method: "put",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        description: newDescription,
-      }),
-    });
+    await fetchWithTokenRefresh(() =>
+      fetch(`/api/users/edit/${id}`, {
+        method: "put",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({
+          description: newDescription,
+        }),
+      })
+    );
+
+    console.log("EeFEFEFFEFE", "TOTOTOTOTTOTOTOT");
   }
 
   function handleInfoEditButtonClick() {
@@ -117,7 +134,7 @@ const User = () => {
   return (
     <AnimBackground>
       <div className="w-full h-full grid grid-rows-[auto_1fr] min-h-screen">
-        <Header />
+        <Header id={id} />
 
         {userInfo === null ? (
           <main className="px-16 py-5 flex justify-center items-center">
@@ -146,16 +163,23 @@ const User = () => {
               <TabsContent value="posts" className="mt-3">
                 <CardList displayCount={4}>
                   {userInfo.posts.map((p) => (
-                    <PostCard 
-                      key={p._id} 
-                      id={p._id} 
-                      title={p.title} 
+                    <PostCard
+                      key={p._id}
+                      id={p._id}
+                      title={p.title}
                       author={p.author}
                       body={p.body}
                       uploadDate={p.uploadDate}
                       likes={p.reactions.likerIds.length}
                       dislikes={p.reactions.dislikerIds.length}
-                      userRating={(showUserButtons && p.reactions.likerIds.includes(id)) ? 'like' : (showUserButtons && p.reactions.dislikerIds.includes(id)) ? 'dislike' : ''}
+                      userRating={
+                        showUserButtons && p.reactions.likerIds.includes(id)
+                          ? "like"
+                          : showUserButtons &&
+                            p.reactions.dislikerIds.includes(id)
+                          ? "dislike"
+                          : ""
+                      }
                       tags={p.tags}
                       disableReactions={true}
                     />
@@ -166,11 +190,18 @@ const User = () => {
               <TabsContent value="comments">
                 <CardList displayCount={4}>
                   {userInfo.comments.map((c) => (
-                    <CommentCard 
-                      key={c._id} 
-                      {...c} 
-                      userRating={(showUserButtons && c.reactions.likerIds.includes(id)) ? 'like' : (showUserButtons && c.reactions.dislikerIds.includes(id)) ? 'dislike' : ''}
-                      disableReactions={true} 
+                    <CommentCard
+                      key={c._id}
+                      {...c}
+                      userRating={
+                        showUserButtons && c.reactions.likerIds.includes(id)
+                          ? "like"
+                          : showUserButtons &&
+                            c.reactions.dislikerIds.includes(id)
+                          ? "dislike"
+                          : ""
+                      }
+                      disableReactions={true}
                     />
                   ))}
                 </CardList>
