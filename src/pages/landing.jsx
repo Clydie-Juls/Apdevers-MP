@@ -90,44 +90,46 @@ const Landing = () => {
         throw new Error("Failed to fetch popular posts");
       }
 
-      const formattedPopularPosts = await Promise.all(
-        data.map(async (post) => {
-          const { response: userResponse, data: userData } =
-            await fetchWithTokenRefresh(() =>
-              fetch(`/api/users/${post.posterId}`, {
-                headers: {
-                  Authorization: `Bearer ${sessionStorage.getItem(
-                    "accessToken"
-                  )}`,
-                },
-              })
-            );
-          if (!userResponse.ok) {
-            throw new Error("Failed to fetch user information");
-          }
-          const username = userData.user.username;
+      const data = await response.json();
+      
+      const formattedPopularPosts = await Promise.all(data.map(async (post) => {
+        const { response: userResponse, data: userData } =
+          await fetchWithTokenRefresh(() =>
+            fetch(`/api/users/${post.posterId}`, {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem(
+                  "accessToken"
+                )}`,
+              },
+            })
+          );
+        
+        if (!userResponse.ok) {
+          throw new Error('Failed to fetch user information');
+        }
+        const username = userData.user.username;
+        
+        const account = await Account.getDetails();
 
-          const account = await Account.getDetails();
+        return {
+          ...post,
+          likes: post.reactions.likerIds.length, 
+          dislikes: post.reactions.dislikerIds.length,
+          ...(account ? 
+            ({ userRating: post.reactions.likerIds.includes(account._id) ? 'like' : post.reactions.dislikerIds.includes(account._id) ? 'dislike' : '' })
+            : ({})),
+          author: username 
+        };
+      }));
 
-          return {
-            ...post,
-            likes: post.reactions.likerIds.length,
-            dislikes: post.reactions.dislikerIds.length,
-            ...(account
-              ? {
-                  userRating: post.reactions.likerIds.includes(account._id)
-                    ? "like"
-                    : post.reactions.dislikerIds.includes(account._id)
-                    ? "dislike"
-                    : "",
-                }
-              : {}),
-            author: username,
-          };
-        })
-      );
+      const postsWithRatio = formattedPopularPosts.map(post => ({
+        ...post,
+        likeDislikeRatio: post.likes / (post.likes + post.dislikes) || 0,
+      }));
 
-      setPopularPosts(formattedPopularPosts);
+      const sortedPopularPosts = postsWithRatio.sort((a, b) => b.likeDislikeRatio - a.likeDislikeRatio);
+      
+      setPopularPosts(sortedPopularPosts);
       setLoadingPopular(false);
     } catch (error) {
       console.error("Error fetching popular posts:", error);
@@ -142,7 +144,6 @@ const Landing = () => {
   useEffect(() => {
     fetchRecentPosts();
     fetchPopularPosts();
-
     fetchLoginStatus();
   }, []);
 

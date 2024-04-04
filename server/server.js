@@ -189,17 +189,25 @@ apiRouter.get("/comments/:id", async (req, res) => {
 app.get("/api/posts/recent", jwtPartialAuth, async (req, res) => {
   const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
-    const posts = await Post.find().sort({ uploadDate: -1 }).limit(limit);
+    const recentPosts = await Post.aggregate([
+      {
+        $addFields: {
+          totalLikes: { $size: "$reactions.likerIds" },
+          totalDislikes: { $size: "$reactions.dislikerIds" },
+        },
+      },
+      { $sort: { uploadDate: -1 } } 
+    ]).limit(limit);
 
-    const formattedPosts = posts.map((post) => ({
-      ...post.toObject(),
+    const formattedRecentPosts = recentPosts.map((post) => ({
+      ...post,
       uploadDate: formatDate(post.uploadDate),
     }));
 
-    res.status(200).json(formattedPosts);
+    res.status(200).json(formattedRecentPosts);
   } catch (error) {
-    console.error("Error fetching posts:", error);
-    res.status(500).json({ error: "Failed to fetch posts" });
+    console.error("Error fetching recent posts:", error);
+    res.status(500).json({ error: "Failed to fetch recent posts" });
   }
 });
 
