@@ -18,17 +18,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Account } from '@/lib/Account';
 
-const PostBody = ({ 
-  id, 
-  accountId, 
-  numComments, 
-  tags, 
-  paragraph, 
+const PostBody = ({
+  id,
+  accountId,
+  numComments,
+  tags,
+  paragraph,
   onDeleteButtonClick,
   likerIds,
   dislikerIds,
-  onLikeClick, 
-  onDislikeClick 
+  onLikeClick,
+  onDislikeClick,
 }) => {
   const rating = likerIds.includes(accountId)
     ? "like"
@@ -36,9 +36,10 @@ const PostBody = ({
     ? "dislike"
     : "";
 
+
   const [enableWriteComment, setEnableWriteComment] = useState(false);
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     const fetchLoginStatus = async () => {
       try {
@@ -82,10 +83,10 @@ const PostBody = ({
       </CardContent>
 
       <CardFooter className="flex justify-start gap-5">
-        <RateButtons 
-          likes={likerIds.length} 
-          dislikes={dislikerIds.length} 
-          horizontal 
+        <RateButtons
+          likes={likerIds.length}
+          dislikes={dislikerIds.length}
+          horizontal
           userRating={rating}
           onLikeClick={onLikeClick}
           onDislikeClick={onDislikeClick}

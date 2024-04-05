@@ -1,10 +1,12 @@
-import React from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useEffect, useState } from "react";
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
+import { Account } from "@/lib/Account";
 
 const CommentsPage = ({ isWriteComment, isReply }) => {
   const { id, commentRepliedToId } = useParams();
@@ -12,6 +14,8 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
   const [formData, setFormData] = useState({
     body: "",
   });
+
+  const formRef = useRef();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,11 +33,18 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
   useEffect(() => {
     const fetchCommentData = async () => {
       try {
-        const response = await fetch(`/api/comments/${id}`);
+        const { response, data } = await fetchWithTokenRefresh(() =>
+          fetch(`/api/comments/${id}`, {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+          })
+        );
+
         if (!response.ok) {
           throw new Error("Failed to fetch post");
         }
-        const commentData = await response.json();
+        const commentData = data;
         setComment(commentData);
         setFormData({
           body: commentData.body,
@@ -43,31 +54,44 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
       }
     };
 
-    if (!isWriteComment) {
-      fetchCommentData();
-    }
+    const checkedIfLoggedIn = async () => {
+      const isloggedIn = await Account.isLoggedIn();
+      if (!isloggedIn) {
+        window.location.replace("/login");
+      }
+      if (!isWriteComment) {
+        fetchCommentData();
+      }
+    };
+
+    checkedIfLoggedIn();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    formRef.current.reportValidity();
+
+    if (!formRef.current.checkValidity()) {
+      return;
+    }
+
     try {
       if (isWriteComment) {
         console.log(e.target.body.value);
-
-
-        const response = await fetch("/api/comments/write", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // Might make id to be the id of the poster or idk
-          body: JSON.stringify({
-            body: e.target.body.value,
-            postId: id,
-            ...(isReply ? { commentRepliedToId } : {})
-          }),
-        });
-
+        const { response } = await fetchWithTokenRefresh(() =>
+          fetch(`/api/comments/write`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+            body: JSON.stringify({
+              body: e.target.body.value,
+              postId: id,
+              ...(isReply ? { commentRepliedToId } : {}),
+            }),
+          })
+        );
 
         console.log("Response:", response);
 
@@ -76,25 +100,27 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
           throw new Error(errorMessage || "Login failed");
         }
 
-      window.location.replace(`/post/${id}`);
+        window.location.replace(`/post/${id}`);
       } else {
-        console.log("Youp");
-        const response = await fetch(`/api/comments/edit/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ body: e.target.body.innerHTML }),
-        });
+        const { response } = await fetchWithTokenRefresh(() =>
+          fetch(`/api/comments/edit/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+            },
+            body: JSON.stringify({ body: e.target.body.innerHTML }),
+          })
+        );
 
         console.log("Response:", response);
 
-        if (!response.ok) { 
+        if (!response.ok) {
           const errorMessage = await response.text();
           throw new Error(errorMessage || "Login failed");
         }
 
-      window.location.replace(`/post/${comment.postId}`);
+        window.location.replace(`/post/${comment.postId}`);
       }
       console.warn("Yes");
     } catch (error) {
@@ -124,6 +150,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
         <Separator />
       </div>
       <form
+        ref={formRef}
         className="w-full"
         method={isWriteComment ? "POST" : "PUT"}
         onSubmit={handleSubmit}

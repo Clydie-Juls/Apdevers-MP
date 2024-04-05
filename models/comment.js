@@ -28,6 +28,10 @@ export const CommentSchema = new mongoose.Schema({
     default: () => Date.now(),
     required: true,
   },
+  deleted: {
+    type: Boolean,
+    default: false,
+  },
   reactions: ReactionSchema,
 });
 

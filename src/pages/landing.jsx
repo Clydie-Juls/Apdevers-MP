@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AnimBackground from "@/components/custom/animBackground";
@@ -8,6 +8,8 @@ import PostCard from "@/components/custom/postCard";
 import PostCardSkeleton from '@/components/custom/postCardSkeleton';
 import { Account } from '@/lib/Account';
 import { useNavigate } from 'react-router-dom';
+import { fetchWithTokenRefresh } from "@/lib/authFetch";
+
 
 const Landing = () => {
   const [recentPosts, setRecentPosts] = useState([]);
@@ -21,81 +23,128 @@ const Landing = () => {
 
   const fetchRecentPosts = async () => {
     try {
-      const response = await fetch('/api/posts/recent');
-      if (!response.ok) {
-        throw new Error('Failed to fetch recent posts');
-      }
-      const data = await response.json();
-      
-      const formattedRecentPosts = await Promise.all(data.map(async (post) => {
-        const userResponse = await fetch(`/api/users/${post.posterId}`);
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch user information');
-        }
-        const userData = await userResponse.json();
-        const username = userData.user.username;
-        
-        const account = await Account.getDetails();
+      const { response, data } = await fetchWithTokenRefresh(() =>
+        fetch(`/api/posts/recent`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          },
+        })
+      );
 
-        return {
-          ...post,
-          likes: post.reactions.likerIds.length, 
-          dislikes: post.reactions.dislikerIds.length,
-          ...(account ? 
-            ({ userRating: post.reactions.likerIds.includes(account._id) ? 'like' : post.reactions.dislikerIds.includes(account._id) ? 'dislike' : '' })
-            : ({})),
-          author: username 
-        };
-      }));
-      
+      if (!response?.ok) {
+        throw new Error("Failed to fetch recent posts");
+      }
+
+      const formattedRecentPosts = await Promise.all(
+        data.map(async (post) => {
+          const { response: userResponse, data: userData } =
+            await fetchWithTokenRefresh(() =>
+              fetch(`/api/users/${post.posterId}`, {
+                headers: {
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "accessToken"
+                  )}`,
+                },
+              })
+            );
+
+          if (!userResponse.ok) {
+            throw new Error("Failed to fetch user information");
+          }
+          const username = userData.user.username;
+
+          const account = await Account.getDetails();
+
+          return {
+            ...post,
+            likes: post.reactions.likerIds.length,
+            dislikes: post.reactions.dislikerIds.length,
+            ...(account
+              ? {
+                  userRating: post.reactions.likerIds.includes(account._id)
+                    ? "like"
+                    : post.reactions.dislikerIds.includes(account._id)
+                    ? "dislike"
+                    : "",
+                }
+              : {}),
+            author: username,
+          };
+        })
+      );
+
       setRecentPosts(formattedRecentPosts);
       setLoadingRecent(false);
     } catch (error) {
-      console.error('Error fetching recent posts:', error);
+      console.error("Error fetching recent posts:", error);
       setLoadingRecent(false);
     }
-  }; 
+  };
 
   const fetchPopularPosts = async () => {
     try {
-      const response = await fetch('/api/posts/popular');
+      const { response, data } = await fetchWithTokenRefresh(() =>
+        fetch(`/api/posts/popular`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          },
+        })
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch popular posts');
+        throw new Error("Failed to fetch popular posts");
       }
-      const data = await response.json();
-      
-      const formattedPopularPosts = await Promise.all(data.map(async (post) => {
-        const userResponse = await fetch(`/api/users/${post.posterId}`);
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch user information');
-        }
-        const userData = await userResponse.json();
-        const username = userData.user.username;
-        
-        const account = await Account.getDetails();
 
-        return {
-          ...post,
-          likes: post.reactions.likerIds.length, 
-          dislikes: post.reactions.dislikerIds.length,
-          ...(account ? 
-            ({ userRating: post.reactions.likerIds.includes(account._id) ? 'like' : post.reactions.dislikerIds.includes(account._id) ? 'dislike' : '' })
-            : ({})),
-          author: username 
-        };
-      }));
+      const formattedPopularPosts = await Promise.all(
+        data.map(async (post) => {
+          const { response: userResponse, data: userData } =
+            await fetchWithTokenRefresh(() =>
+              fetch(`/api/users/${post.posterId}`, {
+                headers: {
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "accessToken"
+                  )}`,
+                },
+              })
+            );
 
-      const postsWithRatio = formattedPopularPosts.map(post => ({
+          if (!userResponse.ok) {
+            throw new Error("Failed to fetch user information");
+          }
+          const username = userData.user.username;
+
+          const account = await Account.getDetails();
+
+          return {
+            ...post,
+            likes: post.reactions.likerIds.length,
+            dislikes: post.reactions.dislikerIds.length,
+            ...(account
+              ? {
+                  userRating: post.reactions.likerIds.includes(account._id)
+                    ? "like"
+                    : post.reactions.dislikerIds.includes(account._id)
+                    ? "dislike"
+                    : "",
+                }
+              : {}),
+            author: username,
+          };
+        })
+      );
+
+      const postsWithRatio = formattedPopularPosts.map((post) => ({
         ...post,
         likeDislikeRatio: post.likes / (post.likes + post.dislikes) || 0,
       }));
 
-      const sortedPopularPosts = postsWithRatio.sort((a, b) => b.likeDislikeRatio - a.likeDislikeRatio);
-      
+      const sortedPopularPosts = postsWithRatio.sort(
+        (a, b) => b.likeDislikeRatio - a.likeDislikeRatio
+      );
+
       setPopularPosts(sortedPopularPosts);
       setLoadingPopular(false);
     } catch (error) {
-      console.error('Error fetching popular posts:', error);
+      console.error("Error fetching popular posts:", error);
       setLoadingPopular(false);
     }
   };
@@ -138,56 +187,56 @@ const Landing = () => {
             </div>
             <TabsContent value="recent">
               <CardList displayCount={6}>
-                {loadingRecent ? (
-                  recentPosts.map(post => (
-                    <PostCardSkeleton key={post._id} />
-                  ))
-                ) : (
-                  recentPosts.map(post => (
-                    <PostCard
-                      key={post._id}
-                      id={post._id}
-                      title={post.title}
-                      author={post.author}
-                      body={post.body}
-                      uploadDate={post.uploadDate}
-                      likes={post.likes}
-                      dislikes={post.dislikes}
-                      userRating={post.userRating}
-                      tags={post.tags}
-                      disableReactions={true}
-                    />
-                  ))
-                )}
+                {loadingRecent
+                  ? recentPosts.map((post) => (
+                      <PostCardSkeleton key={post._id} />
+                    ))
+                  : recentPosts.map((post) => (
+                      <PostCard
+                        key={post._id}
+                        id={post._id}
+                        title={post.title}
+                        author={post.author}
+                        body={post.body}
+                        uploadDate={post.uploadDate}
+                        likes={post.likes}
+                        dislikes={post.dislikes}
+                        userRating={post.userRating}
+                        tags={post.tags}
+                        disableReactions={true}
+                      />
+                    ))}
               </CardList>
             </TabsContent>
             <TabsContent value="popular">
               <CardList displayCount={6}>
-                {loadingPopular ? (
-                  popularPosts.map(post => (
-                    <PostCardSkeleton key={post._id} />
-                  ))
-                ) : (
-                  popularPosts.map(post => (
-                    <PostCard
-                      key={post._id}
-                      id={post._id}
-                      title={post.title}
-                      author={post.author}
-                      body={post.body}
-                      uploadDate={post.uploadDate}
-                      likes={post.likes}
-                      dislikes={post.dislikes}
-                      userRating={post.userRating}
-                      tags={post.tags}
-                      disableReactions={true}
-                    />
-                  ))
-                )}
+                {loadingPopular
+                  ? popularPosts.map((post) => (
+                      <PostCardSkeleton key={post._id} />
+                    ))
+                  : popularPosts.map((post) => (
+                      <PostCard
+                        key={post._id}
+                        id={post._id}
+                        title={post.title}
+                        author={post.author}
+                        body={post.body}
+                        uploadDate={post.uploadDate}
+                        likes={post.likes}
+                        dislikes={post.dislikes}
+                        userRating={post.userRating}
+                        tags={post.tags}
+                        disableReactions={true}
+                      />
+                    ))}
               </CardList>
             </TabsContent>
           </Tabs>
         </main>
+
+        <footer className="mt-4 text-gray-400 hover:text-lime-600 text-center underline">
+          <a href="/about">About the site</a>
+        </footer>
       </div>
     </AnimBackground>
   );

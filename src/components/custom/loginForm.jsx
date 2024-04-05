@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,12 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
-    username: '',
-    password: ''
+    username: "",
+    password: "",
+    keepLoggedIn: false,
   });
 
   const handleChange = (e) => {
@@ -24,21 +24,33 @@ export function LoginForm() {
     setFormData((prevData) => {
       const updatedData = {
         ...prevData,
-        [name]: value
+        [name]: value,
       };
-      console.log('Form Data:', updatedData); 
-      return updatedData; 
+      console.log("Form Data:", updatedData);
+      return updatedData;
     });
   };
-  
+
+  const handleCheckboxChange = (e) => {
+    const { name } = e.target;
+    setFormData((prevData) => {
+      const updatedData = {
+        ...prevData,
+        [name]: e.target.checked,
+      };
+      console.log("Form Data:", updatedData);
+      return updatedData;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { username, password } = formData; 
+      const { username, password } = formData;
       if (!username || !password) {
-        throw new Error('Please provide both username and password.');
+        throw new Error("Please provide both username and password.");
       }
-  
+
       const response = await fetch("/api/account/login", {
         method: "POST",
         headers: {
@@ -46,22 +58,24 @@ export function LoginForm() {
         },
         body: JSON.stringify(formData),
       });
-      
-      console.log('Response:', response); 
-  
+
+      console.log("Response:", response);
+
       if (!response.ok) {
         const errorMessage = await response.text();
-        throw new Error(errorMessage || 'Login failed');
+        throw new Error(errorMessage || "Login failed");
       }
-      
-      window.location.replace('/');
-      
+
+      const info = await response.json();
+      sessionStorage.setItem("accessToken", info.accessToken);
+
+      window.location.replace("/");
     } catch (error) {
-      console.error('Error logging in:', error);
-      alert(error.message || 'Error logging in. Please try again.');
+      console.error("Error logging in:", error);
+      alert(error.message || "Error logging in. Please try again.");
     }
-  };  
-  
+  };
+
   return (
     <Card className="w-[420px] self-center justify-self-center">
       <CardHeader>
@@ -75,29 +89,42 @@ export function LoginForm() {
           <div className="grid w-full items-center gap-4 mb-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="username">Username</Label>
-              <Input 
-                id="username" 
-                name="username" 
-                placeholder="e.g. John Doe" 
-                required 
-                value={formData.username} 
-                onChange={handleChange} 
+              <Input
+                id="username"
+                name="username"
+                minlength="3"
+                placeholder="e.g. John Doe"
+                required
+                value={formData.username}
+                onChange={handleChange}
               />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="password">Password</Label>
-              <Input 
-                type="password" 
-                id="password" 
-                name="password" 
-                placeholder="********" 
-                required 
-                value={formData.password} 
-                onChange={handleChange} 
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                minlength="7"
+                placeholder="********"
+                required
+                value={formData.password}
+                onChange={handleChange}
               />
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="keep-logged-in" />
+              <input
+                type="checkbox"
+                id="keep-logged-in"
+                name="keepLoggedIn"
+                checked={formData.keepLoggedIn}
+                onChange={handleCheckboxChange}
+              ></input>
+              {/* <Checkbox
+                id="keep-logged-in"
+                name="keepLoggedIn"
+                onChange={handleChange}
+              /> */}
               <label
                 htmlFor="keep-logged-in"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -106,7 +133,9 @@ export function LoginForm() {
               </label>
             </div>
           </div>
-          <Button type="submit" className="w-full">Log in</Button>
+          <Button type="submit" className="w-full">
+            Log in
+          </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-6">
@@ -119,4 +148,4 @@ export function LoginForm() {
       </CardFooter>
     </Card>
   );
-  }  
+}
