@@ -5,6 +5,7 @@ import { jwtPartialAuth, jwtAuth } from "../../middleware/auth.js";
 import multer from "multer";
 import { validationResult, check } from "express-validator";
 import { User } from "../../models/user.js";
+import { Comment } from '../../models/comment.js';
 
 const POST_LIMIT = 15;
 const postRouter = Router();
@@ -370,6 +371,7 @@ postRouter.get("/:postId/comments", async (req, res) => {
         deleted: false,
       })
       .lean();
+
     res.status(200).json(comments);
   } catch (e) {
     res.status(500).json({ error: e.message });
