@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router";
 import { Label } from "@/components/ui/label";
@@ -78,7 +78,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
     try {
       if (isWriteComment) {
         console.log(e.target.body.value);
-        const { response, data } = await fetchWithTokenRefresh(() =>
+        const { response } = await fetchWithTokenRefresh(() =>
           fetch(`/api/comments/write`, {
             method: "POST",
             headers: {
@@ -102,7 +102,7 @@ const CommentsPage = ({ isWriteComment, isReply }) => {
 
         window.location.replace(`/post/${id}`);
       } else {
-        const { response, data } = await fetchWithTokenRefresh(() =>
+        const { response } = await fetchWithTokenRefresh(() =>
           fetch(`/api/comments/edit/${id}`, {
             method: "PUT",
             headers: {

@@ -74,7 +74,6 @@ export async function generateNewAccessToken(req, res, next) {
     return next(); // Handle missing refresh token
   }
 
-  console.log(req.headers.authorization);
   const [, accessToken] = req.headers.authorization
     ? req.headers.authorization?.split(" ")
     : " ";
@@ -97,3 +96,30 @@ export async function generateNewAccessToken(req, res, next) {
   }
   next();
 }
+
+export const revalidateRefreshToken = async (req, res, next) => {
+  if (req.cookies.refreshToken && req.cookies.refreshToken.expires) {
+    const user = await User.findOne({
+      refreshToken: req.cookies.refreshToken,
+    });
+
+    const refreshToken = createJwtRefreshToken({ username: user.username });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      expires: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+      secure: true,
+    });
+
+    await User.updateOne(
+      {
+        refreshToken: req.cookies.refreshToken,
+      },
+      {
+        refreshToken,
+      }
+    );
+  }
+
+  next();
+};
