@@ -73,7 +73,7 @@ const CommentBody = ({
         <a href={`/user/${posterId}`} className="flex items-center gap-2">
           <Avatar>
             <AvatarImage src={profile} />
-            <AvatarFallback>CN</AvatarFallback>
+            <AvatarFallback>{userName && userName[0]}</AvatarFallback>
           </Avatar>
           {userName}
         </a>
