@@ -12,6 +12,7 @@ export default defineConfig({
       "/api": {
         target: "https://www.apdevers-mp.onrender.com",
         changeOrigin: true,
+        rewrite: path => path.replace(/^\/api/, '')
       },
     },
   },
