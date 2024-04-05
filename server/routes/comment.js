@@ -7,23 +7,6 @@ import { Comment } from "../../models/comment.js";
 
 const commentRouter = Router();
 
-commentRouter.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The comment does not exist." });
-      return;
-    }
-
-    const comment = await Comment.findById(id).lean();
-
-    res.status(200).json(comment);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 commentRouter.post(
   "/write",
   [
@@ -211,6 +194,23 @@ commentRouter.delete("/:id", jwtAuth, async (req, res) => {
     );
 
     res.status(200).send(`comment ${req.params.id} deleted successfully`);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+commentRouter.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(404).json({ error: "The comment does not exist." });
+      return;
+    }
+
+    const comment = await Comment.findById(id).lean();
+
+    res.status(200).json(comment);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

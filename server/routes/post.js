@@ -16,139 +16,6 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-postRouter.get("/recent", jwtPartialAuth, async (req, res) => {
-  console.log("/recent");
-  const limit = req.user ? 999999999999999 : POST_LIMIT;
-  try {
-    const recentPosts = await Post.aggregate([
-      {
-        $addFields: {
-          totalLikes: { $size: "$reactions.likerIds" },
-          totalDislikes: { $size: "$reactions.dislikerIds" },
-        },
-      },
-      { $sort: { uploadDate: -1 } },
-    ]).limit(limit);
-
-    const formattedRecentPosts = recentPosts.map((post) => ({
-      ...post,
-      uploadDate: formatDate(post.uploadDate),
-    }));
-
-    res.status(200).json(formattedRecentPosts);
-  } catch (error) {
-    console.error("Error fetching recent posts:", error);
-    res.status(500).json({ error: "Failed to fetch recent posts" });
-  }
-});
-
-postRouter.get("/popular", jwtPartialAuth, async (req, res) => {
-  console.log("popopop");
-  const limit = req.user ? 999999999999999 : POST_LIMIT;
-  try {
-    const popularPosts = await Post.aggregate([
-      {
-        $addFields: {
-          totalLikes: { $size: "$reactions.likerIds" },
-          totalDislikes: { $size: "$reactions.dislikerIds" },
-        },
-      },
-      { $sort: { totalLikes: -1 } },
-    ]).limit(limit);
-
-    const formattedPopularPosts = popularPosts.map((post) => ({
-      ...post,
-      uploadDate: formatDate(post.uploadDate),
-    }));
-
-    res.status(200).json(formattedPopularPosts);
-  } catch (error) {
-    console.error("Error fetching popular posts:", error);
-    res.status(500).json({ error: "Failed to fetch popular posts" });
-  }
-});
-
-// Example: '/search?q=post%20title&t=tag1,tag2&do=asc&po=desc'
-postRouter.get("/search", async (req, res) => {
-  try {
-    const titleQuery = req.query.q || "";
-    const tagsQuery = req.query.t ? req.query.t.split(",") : null;
-
-    const dateOrder = req.query.do || "asc";
-    const popularityOrder = req.query.po || "asc";
-
-    const posts = await Post.aggregate([
-      {
-        $match: {
-          title: {
-            $regex: titleQuery,
-            $options: "i",
-          },
-          ...(tagsQuery && { tags: { $all: tagsQuery } }),
-        },
-      },
-      {
-        $addFields: {
-          likeCount: { $size: "$reactions.likerIds" },
-          dislikeCount: { $size: "$reactions.dislikerIds" },
-        },
-      },
-      {
-        $addFields: {
-          likeToDislikeRatio: {
-            $cond: [
-              { $eq: ["$dislikeCount", 0] },
-              "$likeCount",
-              { $divide: ["$likeCount", "$dislikeCount"] },
-            ],
-          },
-        },
-      },
-      {
-        $sort: {
-          title: 1,
-          uploadDate: dateOrder === "asc" ? 1 : -1,
-          likeToDislikeRatio: popularityOrder === "asc" ? 1 : -1,
-        },
-      },
-    ]);
-
-    res.status(200).json(posts);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-postRouter.get("/:postId/comments", async (req, res) => {
-  try {
-    const { postId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
-      res.status(404).json({ error: "The post does not exist." });
-      return;
-    }
-
-    const comments = await Comment.find({ postId })
-      .populate("commenterId", "username picture")
-      .populate({
-        path: "commentRepliedToId",
-        select: "body commenterId",
-        populate: {
-          path: "commenterId",
-          model: "User",
-          select: "username picture",
-        },
-      })
-      .find({
-        deleted: false,
-      })
-      .lean();
-    res.status(200).json(comments);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 postRouter.post(
   "/write",
   [
@@ -392,6 +259,140 @@ postRouter.delete("/:id", jwtAuth, async (req, res) => {
     await Comment.deleteMany({ postId: id });
 
     res.status(200).send(`post ${req.params.id} deleted successfully`);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+postRouter.get("/recent", jwtPartialAuth, async (req, res) => {
+  console.log("/recent");
+  const limit = req.user ? 999999999999999 : POST_LIMIT;
+  try {
+    const recentPosts = await Post.aggregate([
+      {
+        $addFields: {
+          totalLikes: { $size: "$reactions.likerIds" },
+          totalDislikes: { $size: "$reactions.dislikerIds" },
+        },
+      },
+      { $sort: { uploadDate: -1 } },
+    ]).limit(limit);
+
+    const formattedRecentPosts = recentPosts.map((post) => ({
+      ...post,
+      uploadDate: formatDate(post.uploadDate),
+    }));
+
+    res.status(200).json(formattedRecentPosts);
+  } catch (error) {
+    console.error("Error fetching recent posts:", error);
+    res.status(500).json({ error: "Failed to fetch recent posts" });
+  }
+});
+
+postRouter.get("/popular", jwtPartialAuth, async (req, res) => {
+  console.log("popopop");
+  const limit = req.user ? 999999999999999 : POST_LIMIT;
+  try {
+    const popularPosts = await Post.aggregate([
+      {
+        $addFields: {
+          totalLikes: { $size: "$reactions.likerIds" },
+          totalDislikes: { $size: "$reactions.dislikerIds" },
+        },
+      },
+      { $sort: { totalLikes: -1 } },
+    ]).limit(limit);
+
+    const formattedPopularPosts = popularPosts.map((post) => ({
+      ...post,
+      uploadDate: formatDate(post.uploadDate),
+    }));
+
+    res.status(200).json(formattedPopularPosts);
+  } catch (error) {
+    console.error("Error fetching popular posts:", error);
+    res.status(500).json({ error: "Failed to fetch popular posts" });
+  }
+});
+
+// Example: '/search?q=post%20title&t=tag1,tag2&do=asc&po=desc'
+postRouter.get("/search", async (req, res) => {
+  try {
+    const titleQuery = req.query.q || "";
+    const tagsQuery = req.query.t ? req.query.t.split(",") : null;
+
+    const dateOrder = req.query.do || "asc";
+    const popularityOrder = req.query.po || "asc";
+
+    const posts = await Post.aggregate([
+      {
+        $match: {
+          title: {
+            $regex: titleQuery,
+            $options: "i",
+          },
+          ...(tagsQuery && { tags: { $all: tagsQuery } }),
+        },
+      },
+      {
+        $addFields: {
+          likeCount: { $size: "$reactions.likerIds" },
+          dislikeCount: { $size: "$reactions.dislikerIds" },
+        },
+      },
+      {
+        $addFields: {
+          likeToDislikeRatio: {
+            $cond: [
+              { $eq: ["$dislikeCount", 0] },
+              "$likeCount",
+              { $divide: ["$likeCount", "$dislikeCount"] },
+            ],
+          },
+        },
+      },
+      {
+        $sort: {
+          title: 1,
+          uploadDate: dateOrder === "asc" ? 1 : -1,
+          likeToDislikeRatio: popularityOrder === "asc" ? 1 : -1,
+        },
+      },
+    ]);
+
+    res.status(200).json(posts);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+postRouter.get("/:postId/comments", async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      res.status(404).json({ error: "The post does not exist." });
+      return;
+    }
+
+    const comments = await Comment.find({ postId })
+      .populate("commenterId", "username picture")
+      .populate({
+        path: "commentRepliedToId",
+        select: "body commenterId",
+        populate: {
+          path: "commenterId",
+          model: "User",
+          select: "username picture",
+        },
+      })
+      .find({
+        deleted: false,
+      })
+      .lean();
+    res.status(200).json(comments);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

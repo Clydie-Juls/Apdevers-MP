@@ -106,7 +106,6 @@ userRouter.delete("/:id", jwtAuth, async (req, res) => {
 });
 
 userRouter.get("/:id", async (req, res) => {
-  console.log("sad");
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
