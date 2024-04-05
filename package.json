@@ -8,6 +8,7 @@
     "dev:client": "vite",
     "dev:server": "nodemon ./server/server.js false",
     "build": "vite build",
+    "prod:server": "node ./server/server.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
