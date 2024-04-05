@@ -105,6 +105,7 @@ userRouter.delete("/:id", jwtAuth, async (req, res) => {
   }
 });
 
+
 userRouter.get("/:id", async (req, res) => {
   console.log("sad");
   try {

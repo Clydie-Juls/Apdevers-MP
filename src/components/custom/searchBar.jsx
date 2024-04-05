@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { FilterSearch } from './filterSearch';
+import FilterSearch from './filterSearch'; 
 
 const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +38,8 @@ const SearchBar = () => {
       <Button onClick={handleSearch}>
         <Search />
       </Button>
-      <FilterSearch onTagsChange={setTags} />
+      {/* Pass onTagsChange to FilterSearch */}
+      <FilterSearch onTagsChange={setTags} /> 
     </div>
   );
 };
