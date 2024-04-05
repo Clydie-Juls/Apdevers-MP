@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { User } from "../../models/user.js";
 import { Post } from "../../models/post.js";
+import { Comment } from "../../models/comment.js";
 import mongoose from "mongoose";
 import { jwtAuth } from "../../middleware/auth.js";
 import bcrypt from "bcrypt";
@@ -28,36 +29,6 @@ userRouter.post("/picture/:id", upload.single("file"), async (req, res) => {
     } else {
       res.status(200).send(pictureLink);
     }
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-userRouter.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The user does not exist." });
-      return;
-    }
-
-    const user = await User.findById(id).lean();
-    const posts = await Post.find({ posterId: id }).lean();
-    let comments = await Comment.find({ commenterId: id }).lean();
-
-    // add post object to each comment
-    comments = await Promise.all(
-      comments.map(async (comment) => {
-        const post = await Post.findById(comment.postId).lean();
-        return { ...comment, post };
-      })
-    );
-
-    res.status(200).json({
-      user,
-      posts,
-      comments,
-    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -129,6 +100,38 @@ userRouter.delete("/:id", jwtAuth, async (req, res) => {
 
     res.clearCookie("refreshToken", { path: "/" });
     res.status(200).send(`User ${req.params.id} deleted successfully`);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+userRouter.get("/:id", async (req, res) => {
+  console.log("sad");
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(404).json({ error: "The user does not exist." });
+      return;
+    }
+
+    const user = await User.findById(id).lean();
+    const posts = await Post.find({ posterId: id }).lean();
+    let comments = await Comment.find({ commenterId: id }).lean();
+
+    // add post object to each comment
+    comments = await Promise.all(
+      comments.map(async (comment) => {
+        const post = await Post.findById(comment.postId).lean();
+        return { ...comment, post };
+      })
+    );
+
+    res.status(200).json({
+      user,
+      posts,
+      comments,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

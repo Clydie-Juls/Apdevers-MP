@@ -87,7 +87,8 @@ postRouter.get("/search", async (req, res) => {
           },
           ...(tagsQuery && { tags: { $all: tagsQuery } }),
         },
-      },      
+
+      },
       {
         $addFields: {
           likeCount: { $size: "$reactions.likerIds" },
