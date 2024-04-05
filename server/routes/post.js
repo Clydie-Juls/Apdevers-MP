@@ -16,27 +16,8 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-postRouter.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    console.log("id", id);
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The post does not exist." });
-      return;
-    }
-
-    // post db fetch
-    const post = await Post.findById(id).lean();
-    console.log("post");
-
-    res.status(200).json({ post });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 postRouter.get("/recent", jwtPartialAuth, async (req, res) => {
+  console.log("/recent");
   const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
     const recentPosts = await Post.aggregate([
@@ -62,6 +43,7 @@ postRouter.get("/recent", jwtPartialAuth, async (req, res) => {
 });
 
 postRouter.get("/popular", jwtPartialAuth, async (req, res) => {
+  console.log("popopop");
   const limit = req.user ? 999999999999999 : POST_LIMIT;
   try {
     const popularPosts = await Post.aggregate([
@@ -371,6 +353,27 @@ postRouter.post("/unreact/:id", jwtAuth, async (req, res) => {
     } else {
       res.status(200).send("Unsuccessful");
     }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+postRouter.get("/:id", async (req, res) => {
+  console.log("/recent");
+  try {
+    const { id } = req.params;
+
+    console.log("id", id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(404).json({ error: "The post does not exist." });
+      return;
+    }
+
+    // post db fetch
+    const post = await Post.findById(id).lean();
+    console.log("post");
+
+    res.status(200).json({ post });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
