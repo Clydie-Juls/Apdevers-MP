@@ -225,27 +225,6 @@ postRouter.post("/unreact/:id", jwtAuth, async (req, res) => {
   }
 });
 
-postRouter.get("/:id", async (req, res) => {
-  console.log("/recent");
-  try {
-    const { id } = req.params;
-
-    console.log("id", id);
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(404).json({ error: "The post does not exist." });
-      return;
-    }
-
-    // post db fetch
-    const post = await Post.findById(id).lean();
-    console.log("post");
-
-    res.status(200).json({ post });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 postRouter.delete("/:id", jwtAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -263,7 +242,6 @@ postRouter.delete("/:id", jwtAuth, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
 
 postRouter.get("/recent", jwtPartialAuth, async (req, res) => {
   console.log("/recent");
@@ -393,6 +371,27 @@ postRouter.get("/:postId/comments", async (req, res) => {
       })
       .lean();
     res.status(200).json(comments);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+postRouter.get("/:id", async (req, res) => {
+  console.log("/recent");
+  try {
+    const { id } = req.params;
+
+    console.log("id", id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(404).json({ error: "The post does not exist." });
+      return;
+    }
+
+    // post db fetch
+    const post = await Post.findById(id).lean();
+    console.log("post");
+
+    res.status(200).json({ post });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
