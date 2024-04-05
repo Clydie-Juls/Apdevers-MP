@@ -83,7 +83,7 @@ const Landing = () => {
 
   const fetchPopularPosts = async () => {
     try {
-      const { response } = await fetchWithTokenRefresh(() =>
+      const { response, data } = await fetchWithTokenRefresh(() =>
         fetch(`/api/posts/popular`, {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
@@ -93,8 +93,6 @@ const Landing = () => {
       if (!response.ok) {
         throw new Error("Failed to fetch popular posts");
       }
-
-      const data = await response.json();
 
       const formattedPopularPosts = await Promise.all(
         data.map(async (post) => {
