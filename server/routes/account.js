@@ -3,8 +3,8 @@ import {
   jwtAuth,
   createJwtAccessToken,
   createJwtRefreshToken,
-} from "middleware/auth";
-import { User } from "models/user";
+} from "../../middleware/auth.js";
+import { User } from "../../models/user.js";
 import { validationResult, check } from "express-validator";
 import bcrypt from "bcrypt";
 

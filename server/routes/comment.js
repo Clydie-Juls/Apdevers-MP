@@ -1,9 +1,9 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { validationResult, check } from "express-validator";
-import { jwtAuth } from "middleware/auth";
-import { User } from "models/user";
-import { Comment } from "models/comment";
+import { jwtAuth } from "../../middleware/auth.js";
+import { User } from "../../models/user.js";
+import { Comment } from "../../models/comment.js";
 
 const commentRouter = Router();
 

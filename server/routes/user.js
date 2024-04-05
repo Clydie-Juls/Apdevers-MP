@@ -1,9 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
-import { User } from "models/user";
-import { Post } from "models/post";
+import { User } from "../../models/user.js";
+import { Post } from "../../models/post.js";
 import mongoose from "mongoose";
-import { jwtAuth } from "middleware/auth";
+import { jwtAuth } from "../../middleware/auth.js";
 import bcrypt from "bcrypt";
 import { check, validationResult } from "express-validator";
 

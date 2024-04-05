@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { Post } from "models/post";
+import { Post } from "../../models/post.js";
 import mongoose from "mongoose";
-import { jwtPartialAuth, jwtAuth } from "middleware/auth";
+import { jwtPartialAuth, jwtAuth } from "../../middleware/auth.js";
 import multer from "multer";
 import { validationResult, check } from "express-validator";
-import { User } from "models/user";
+import { User } from "../../models/user.js";
 
 const POST_LIMIT = 15;
 const postRouter = Router();
