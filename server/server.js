@@ -191,8 +191,9 @@ app.get("/api/posts/search", async (req, res) => {
     const titleQuery = req.query.q || "";
     const tagsQuery = req.query.t ? req.query.t.split(",") : null;
 
-    const dateOrder = req.query.do || "asc";
     const popularityOrder = req.query.po || "asc";
+
+    const sortByPopularity = { likeCount: popularityOrder === "asc" ? 1 : -1 };
 
     const posts = await Post.aggregate([
       {
@@ -211,22 +212,7 @@ app.get("/api/posts/search", async (req, res) => {
         },
       },
       {
-        $addFields: {
-          likeToDislikeRatio: {
-            $cond: [
-              { $eq: ["$dislikeCount", 0] },
-              "$likeCount",
-              { $divide: ["$likeCount", "$dislikeCount"] },
-            ],
-          },
-        },
-      },
-      {
-        $sort: {
-          title: 1,
-          uploadDate: dateOrder === "asc" ? 1 : -1,
-          likeToDislikeRatio: popularityOrder === "asc" ? 1 : -1,
-        },
+        $sort: sortByPopularity
       },
     ]);    
 
