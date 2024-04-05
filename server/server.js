@@ -314,6 +314,9 @@ apiRouter.get("/posts/:postId/comments", async (req, res) => {
           select: "username picture",
         },
       })
+      .find({
+        deleted: false
+      })
       // .updateMany(
       //   {},
       //   {
@@ -942,7 +945,15 @@ apiRouter.delete("/comments/:id", jwtAuth, async (req, res) => {
       return;
     }
 
-    await Comment.deleteOne({ _id: id });
+    await Comment.updateOne(
+      {
+        _id: id,
+      },
+      {
+        body: "[Deleted]",
+        deleted: true,
+      }
+    );
 
     res.status(200).send(`comment ${req.params.id} deleted successfully`);
   } catch (e) {
