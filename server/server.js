@@ -1,3 +1,5 @@
+import process from 'process';
+
 import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
@@ -22,7 +24,7 @@ const app = express();
 const port = 3000;
 const apiRouter = express.Router();
 
-mongoose.connect("mongodb://127.0.0.1:27017/T3Db");
+mongoose.connect(`mongodb+srv://lenzgiorivera:${process.env.DB_PASSWORD}@ccapdev.sv0smzh.mongodb.net/?retryWrites=true&w=majority&appName=CCAPDEV`);
 
 const POST_LIMIT = 15;
 
