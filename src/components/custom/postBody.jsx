@@ -77,7 +77,7 @@ const PostBody = ({
       <CardContent>
         <form>
           <div className="grid w-full items-center">
-            <div className="flex flex-col">{paragraph}</div>
+            <div className="flex flex-col whitespace-break-spaces">{paragraph}</div>
           </div>
         </form>
       </CardContent>
