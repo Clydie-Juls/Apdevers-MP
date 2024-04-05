@@ -248,6 +248,7 @@ const Post = () => {
               numComments={comments.length}
               likerIds={post.post.reactions.likerIds}
               dislikerIds={post.post.reactions.dislikerIds}
+              allowEdits={(account?._id === poster?.user._id)}
               onLikeClick={onPostLikeClick}
               onDislikeClick={onPostDislikeClick}
               onDeleteButtonClick={() => {

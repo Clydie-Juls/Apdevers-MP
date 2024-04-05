@@ -24,6 +24,7 @@ const PostBody = ({
   numComments,
   tags,
   paragraph,
+  allowEdits,
   onDeleteButtonClick,
   likerIds,
   dislikerIds,
@@ -35,7 +36,6 @@ const PostBody = ({
     : dislikerIds.includes(accountId)
     ? "dislike"
     : "";
-
 
   const [enableWriteComment, setEnableWriteComment] = useState(false);
   const navigate = useNavigate();
@@ -101,24 +101,26 @@ const PostBody = ({
             Add a comment
           </Button>
         </div>
-        <div>
-          <DropdownMenu>
-            <DropdownMenuTrigger variant="ghost">
-              <MoreVertical style={{ width: "1.5rem", height: "1.5rem" }} />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onSelect={() => window.location.replace(`/editpost/${id}`)}
-              >
-                Edit post
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDeleteButtonClick}>
-                Delete post
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {allowEdits && (
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger variant="ghost">
+                <MoreVertical style={{ width: "1.5rem", height: "1.5rem" }} />
+              </DropdownMenuTrigger>
+  
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onSelect={() => window.location.replace(`/editpost/${id}`)}
+                >
+                  Edit post
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDeleteButtonClick}>
+                  Delete post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );
