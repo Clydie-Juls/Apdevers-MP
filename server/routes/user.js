@@ -13,7 +13,7 @@ const userRouter = Router();
 
 userRouter.post("/picture/:id", upload.single("file"), async (req, res) => {
   try {
-    const pictureLink = `http://localhost:3000/images/${req.file.filename}`;
+    const pictureLink = `https://www.apdevers-mp.onrender.com/images/${req.file.filename}`;
 
     const { nModified } = await User.updateOne(
       {
