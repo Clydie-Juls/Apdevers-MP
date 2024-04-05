@@ -87,7 +87,7 @@ const ProfileSide = ({
         ref={descElemRef}
         type="text"
         className={
-          "resize-none max-w-[40ch] bg-transparent" +
+          "flex-1 max-h-[12ch] resize-none max-w-[40ch] bg-transparent" +
           (!descEditable ? " focus:outline-none" : "")
         }
         readOnly={!descEditable}
