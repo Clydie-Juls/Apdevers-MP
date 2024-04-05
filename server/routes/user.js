@@ -114,7 +114,7 @@ userRouter.get("/:id", async (req, res) => {
       return;
     }
 
-    const user = await User.findById(id).lean();
+    const user = await User.findById(id).select('-password').lean();
     const posts = await Post.find({ posterId: id }).lean();
     let comments = await Comment.find({ commenterId: id }).lean();
 
